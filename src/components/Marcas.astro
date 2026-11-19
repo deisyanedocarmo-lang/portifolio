@@ -11,7 +11,7 @@ const marcas = c.marcas!;
   <div class="faixa-marcas" tabindex="0" aria-label="Logos das marcas com quem já trabalhei">
     <ul class="cartoes" data-brand-track>
       {marcas.lista.map((m) => (
-        <li class="logo-marca" title={m.nome}>
+        <li class:list={['logo-marca', m.logo && (m.logo.width / m.logo.height >= 2.1 ? 'logo-horizontal' : 'logo-compacta')]} title={m.nome}>
           {m.logo ? <Image src={m.logo} alt={m.nome} /> : <span>{m.nome}</span>}
         </li>
       ))}
@@ -298,8 +298,8 @@ const marcas = c.marcas!;
     object-fit: contain;
   }
   :global(.logo-marca.logo-compacta img) {
-    width: 60%;
-    height: 60%;
+    width: 88%;
+    height: 88%;
   }
   :global(.logo-marca.logo-compacta) {
     border-radius: 0.7rem;
