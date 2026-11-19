@@ -130,10 +130,22 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     }
     <slot />
     <Metricas />
+    <div class="aviso-impressao" aria-hidden="true">
+      <p class="aviso-impressao-nome">{c.topo.nome}</p>
+      <p>Este portfólio não está disponível para impressão ou PDF.</p>
+      <p>Para receber o material, fale comigo:{c.contato.email && <><br />{c.contato.email}</>}{c.contato.whatsapp?.numero && <><br />WhatsApp {String(c.contato.whatsapp.numero).replace(/\D/g, '').replace(/^55(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3')}</>}</p>
+    </div>
   </body>
 </html>
 
 <style is:global>
+  /* Impressão e "Salvar como PDF": esconde o portfólio e mostra só um recado com o contato. */
+  .aviso-impressao { display: none; }
+  @media print {
+    body > *:not(.aviso-impressao) { display: none !important; }
+    .aviso-impressao { display: block !important; padding: 3rem 2rem; color: #302c29; font: 14pt/1.6 Georgia, serif; text-align: center; }
+    .aviso-impressao-nome { margin-bottom: 1.5rem; font-size: 22pt; }
+  }
   *,
   *::before,
   *::after {
