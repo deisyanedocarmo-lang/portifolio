@@ -211,7 +211,7 @@ export default defineCreator({
     mostrar: true,
     titulo: 'Como eu trabalho',
     prazo: 'Os vídeos são entregues em até 7 dias úteis.',
-    incluso: [],
+    incluso: ['Roteiro', 'Edição', 'Legenda', 'Uma rodada de ajuste'],
     direitosDeUso: 'Todos os pacotes incluem uso em anúncios por 3 meses e uso orgânico permanente.',
     observacao: '',
   },
@@ -294,7 +294,7 @@ export default defineCreator({
       // Mensagem que já aparece escrita quando a marca abre o WhatsApp.
       mensagem: 'Oi, Deisyane! Vi seu portfólio e quero conversar sobre um conteúdo UGC.',
     },
-    email: 'contatp.deisyaneborges@gmail.com',
+    email: 'contato.deisyane.borges@gmail.com',
     // Só o perfil, com ou sem @.
     instagram: 'bydeisyaneborges',
     tiktok: 'bydeisyaneborges',
