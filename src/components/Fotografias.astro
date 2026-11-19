@@ -1,8 +1,15 @@
 ---
+import { existsSync } from 'node:fs';
 import Cabecalho from './Cabecalho.astro';
 import { c, caminho } from '../lib/site';
 
 const galeria = c.fotografias!;
+// A faixa usa uma versão leve da foto (arquivo "-mini.webp"), que carrega rápido no celular.
+// A foto grande só é baixada quando alguém toca para ampliar. Sem versão leve, usa a original.
+const versaoLeve = (arquivo: string) => {
+  const leve = arquivo.replace(/(-carrossel)?\.\w+$/, '-mini.webp');
+  return existsSync(`public/fotografias/${leve}`) ? leve : arquivo;
+};
 const legacyPhotoKeys: Record<string, string> = {
   'cuidados-cabelos-carrossel.webp': 'fotografias-4',
   'protetor-solar-carrossel.webp': 'fotografias-5',
@@ -22,7 +29,7 @@ const legacyPhotoKeys: Record<string, string> = {
     <ul class="grade" data-photo-track data-photo-lane="topo">
       {galeria.lista.map(({ arquivo, descricao }, index) => (
         <li class="foto-item" data-photo-index={index} data-preview-media-key={arquivo === 'deisyane-triton.jpg' ? 'fotografias-triton' : legacyPhotoKeys[arquivo]}>
-          <figure><img src={caminho(`fotografias/${arquivo}`)} alt={descricao} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" fetchpriority={index === 0 ? 'high' : 'auto'} /></figure>
+          <figure><img src={caminho(`fotografias/${versaoLeve(arquivo)}`)} data-full={caminho(`fotografias/${arquivo}`)} alt={descricao} width="520" height="650" loading="eager" decoding="async" fetchpriority={index < 2 ? 'high' : 'auto'} /></figure>
         </li>
       ))}
     </ul>
@@ -135,7 +142,7 @@ const legacyPhotoKeys: Record<string, string> = {
       activeIndex = (index + cards.length) % cards.length;
       const image = cards[activeIndex].querySelector<HTMLImageElement>('img');
       if (!image) return;
-      expanded.src = image.currentSrc || image.src;
+      expanded.src = image.dataset.full || image.currentSrc || image.src;
       expanded.alt = image.alt;
       if (status) status.textContent = `${activeIndex + 1} de ${cards.length}`;
     };
@@ -173,7 +180,7 @@ const legacyPhotoKeys: Record<string, string> = {
   .faixa-fotos::-webkit-scrollbar { display: none; }
   .faixa-fotos:focus-visible { outline: 2px solid var(--destaque); outline-offset: 5px; }
   .grade { display: flex; gap: .8rem; width: max-content; min-width: 100%; margin: 0; padding: .2rem .1rem .2rem; list-style: none; }
-  .grade.animar { animation: rolar-fotos var(--duracao-faixa-fotos, 150s) linear infinite; }
+  .grade.animar { animation: rolar-fotos var(--duracao-faixa-fotos, 150s) linear infinite; will-change: transform; backface-visibility: hidden; }
   .grade[data-photo-lane='base'] { margin-left: clamp(6.4rem, 10.9vw, 8.4rem); }
   .grade[data-photo-lane='base'].animar { animation-direction: reverse; }
   .faixa-fotos.interagindo .grade, .faixa-fotos.ampliando .grade { animation-play-state: paused; }
