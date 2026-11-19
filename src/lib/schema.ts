@@ -245,6 +245,9 @@ export const esquema = z
     }),
 
     linksBio: z.strictObject({
+      // Foto própria da página de links (opcional). Sem ela, usa a foto do topo do portfólio.
+      foto: imagem('da foto da página de links').optional(),
+      fotoDescricao: opcional,
       frase: opcional,
       cupons: z.array(z.strictObject({
         marca: texto('faltou o nome da marca do cupom'),

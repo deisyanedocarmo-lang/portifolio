@@ -311,6 +311,9 @@ export default defineCreator({
   // ── PÁGINA DE LINKS PARA A BIO DO INSTAGRAM ────────────────────────────────
   // Para incluir outro cupom, acrescente uma marca, o código e o endereço da loja.
   linksBio: {
+    // Foto da página de links (fica em src/imagens). Diferente da foto do portfólio.
+    foto: 'foto-links.jpg',
+    fotoDescricao: 'Deisyane sorrindo de leve, com cabelo longo e blusa tomara que caia clara',
     frase: 'Conteúdo real, recomendações e novidades.',
     cupons: [
       { marca: 'Triton', codigo: 'DEISYANE5', url: 'https://usetriton.com.br/', detalhe: 'Use meu cupom na loja Triton.' },

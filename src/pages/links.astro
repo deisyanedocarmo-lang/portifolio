@@ -37,8 +37,8 @@ const fotos = (c.fotografias?.mostrar ? c.fotografias.lista : []).slice(0, 6).ma
 
     <header class="capa">
       <Picture
-        src={c.topo.foto}
-        alt={c.topo.fotoDescricao}
+        src={c.linksBio.foto ?? c.topo.foto}
+        alt={c.linksBio.foto ? (c.linksBio.fotoDescricao || c.topo.fotoDescricao) : c.topo.fotoDescricao}
         widths={[480, 720, 960]}
         sizes="(min-width: 600px) 32rem, 100vw"
         formats={['avif', 'webp']}
