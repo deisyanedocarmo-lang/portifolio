@@ -8,7 +8,8 @@ const linkDoPacote = (nome: string) =>
   c.contato.whatsapp ? linkDeContato('whatsapp', `Oi! Vi seu portfólio e quero o pacote "${nome}".`) : linkPrincipal;
 ---
 
-<section class="secao recuo" id="valores" aria-labelledby="valores-titulo">
+<section class="secao valores" id="valores" aria-labelledby="valores-titulo">
+  <div class="conteudo recuo">
   <Cabecalho rotulo="Investimento" titulo={v.titulo} id="valores-titulo" />
   {v.texto && <p class="texto">{v.texto}</p>}
   {
@@ -16,13 +17,15 @@ const linkDoPacote = (nome: string) =>
       <ul class="pacotes">
         {v.pacotes.map((p) => (
           <li class:list={['pacote', { destacado: !!p.etiqueta }]}>
-            {p.etiqueta && <span class="etiqueta">{p.etiqueta}</span>}
+            <div class="sobretitulo">
+              {p.detalhe && <p class="detalhe">{p.detalhe}</p>}
+              {p.etiqueta && <span class="etiqueta">{p.etiqueta}</span>}
+            </div>
             <h3>{p.nome}</h3>
-            {p.detalhe && <p class="detalhe">{p.detalhe}</p>}
             <p class="preco">{p.preco || 'Sob consulta'}</p>
             {p.descricao && <p class="descricao">{p.descricao}</p>}
             <a class="botao" href={linkDoPacote(p.nome)} target="_blank" rel="noopener">
-              {v.botao} <span aria-hidden="true">→</span>
+              Quero esse pacote
             </a>
           </li>
         ))}
@@ -32,7 +35,7 @@ const linkDoPacote = (nome: string) =>
   {
     v.avulsos.length > 0 && (
       <div class="avulsos">
-        <h3>Outros formatos</h3>
+        <h3>Extras</h3>
         <dl>
           {v.avulsos.map((a) => (
             <div>
@@ -45,12 +48,18 @@ const linkDoPacote = (nome: string) =>
     )
   }
   {v.observacao && <p class="observacao">{v.observacao}</p>}
+  </div>
 </section>
 
 <style>
+  .valores {
+    width: 100%;
+    background: var(--fundo-suave);
+  }
+  .conteudo { width: min(100% - 2 * clamp(1rem, 5vw, 3rem), 76rem); }
   .texto {
     max-width: 34rem;
-    margin: -0.75rem 0 2rem;
+    margin: -0.25rem 0 2rem;
     color: var(--suave);
   }
   @media (max-width: 759px) {
@@ -61,46 +70,85 @@ const linkDoPacote = (nome: string) =>
   }
   .pacotes {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-    gap: 1rem;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .pacote {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    padding: 1.75rem 1.5rem 1.5rem;
+    gap: 0.55rem;
+    min-height: 16.5rem;
+    padding: 1.1rem 1rem 1rem;
     border: 1px solid var(--linha);
-    border-radius: max(var(--raio), 12px);
+    border-radius: max(var(--raio), 16px);
+    background: var(--superficie);
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .pacote:not(.destacado) {
+    border-color: color-mix(in srgb, var(--nude) 40%, white);
+    background: #fff;
+    box-shadow: 0 4px 16px rgb(75 53 43 / 0.045);
+  }
+  .pacote:hover {
+    border-color: var(--nude);
   }
   .destacado {
-    border-color: var(--texto);
-    background: var(--texto);
-    color: var(--fundo);
+    border: 1.5px solid var(--marrom-profundo);
+    background: var(--marrom-profundo);
+    color: #fff;
+    box-shadow: 0 8px 24px rgb(75 53 43 / 0.16);
+  }
+  .destacado:hover {
+    border-color: var(--destaque);
+  }
+  .sobretitulo {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2rem;
   }
   .etiqueta {
-    position: absolute;
-    top: -0.75rem;
-    left: 1.5rem;
-    padding: 0.3em 0.8em;
-    border: 1px solid var(--texto);
+    flex: 0 0 auto;
+    padding: 0.3em 0.58em;
+    border: 1px solid var(--linha);
     border-radius: 999px;
-    background: var(--fundo);
+    background: var(--superficie);
     color: var(--texto);
-    font-size: 0.75rem;
+    font-size: 0.58rem;
     font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .destacado .etiqueta::before {
+    content: '✦  ✦  ';
+    color: var(--destaque);
+    letter-spacing: 0.04em;
   }
   h3 {
-    font-size: calc(1.5rem * var(--escala));
+    max-width: 14rem;
+    font-size: calc(1.28rem * var(--escala));
+    line-height: 1.1;
   }
   .detalhe {
-    font-size: 0.95rem;
+    color: var(--suave);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    line-height: 1.3;
+    text-transform: uppercase;
   }
   .preco {
     margin-top: 0.9rem;
     font-family: var(--f-titulo);
     font-weight: var(--peso-titulo);
-    font-size: calc(clamp(1.8rem, 4vw, 2.3rem) * var(--escala));
+    font-size: calc(clamp(1.65rem, 2.5vw, 2.15rem) * var(--escala));
     letter-spacing: var(--espaco-titulo);
     line-height: 1.1;
   }
@@ -111,34 +159,67 @@ const linkDoPacote = (nome: string) =>
   .pacote .botao {
     margin-top: auto;
     width: 100%;
+    min-height: 2.7rem;
+    padding: 0.7em 0.9em;
+    font-size: 0.82rem;
   }
   .pacote > :nth-last-child(2) {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.5rem;
   }
   .destacado .botao {
-    background: var(--fundo);
-    color: var(--texto);
+    background: #F7F5F2;
+    color: var(--marrom-profundo);
   }
+  .destacado .detalhe {
+    color: rgb(255 255 255 / 0.78);
+  }
+  .destacado .etiqueta {
+    border-color: rgb(255 255 255 / 0.48);
+    background: #F7F5F2;
+    color: var(--marrom-profundo);
+  }
+  .destacado h3,
+  .destacado .preco { color: #fff; }
+  .destacado .descricao { color: rgb(255 255 255 / 0.84); }
   .destacado :focus-visible {
     outline-color: var(--fundo);
   }
   .avulsos {
-    max-width: 34rem;
-    margin-top: clamp(2.5rem, 6vw, 3.5rem);
+    max-width: 50rem;
+    margin: clamp(2rem, 4vw, 2.75rem) auto 0;
   }
   .avulsos h3 {
-    margin-bottom: 0.75rem;
-    font-size: calc(1.35rem * var(--escala));
+    margin-bottom: 0.85rem;
+    font-family: var(--f-titulo);
+    font-size: calc(1.1rem * var(--escala));
+    font-weight: var(--peso-titulo);
+    color: var(--texto);
   }
+  .avulsos dl { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--linha); border-radius: max(var(--raio), 14px); background: var(--superficie); padding-inline: 1rem; }
   .avulsos div {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) 6.5rem;
+    align-items: center;
     gap: 1rem;
-    padding-block: 0.7rem;
+    padding-block: 0.9rem;
     border-bottom: 1px solid var(--linha);
   }
+  .avulsos div:last-child { border-bottom: 0; }
+  .avulsos dt { font-family: var(--f-corpo); font-size: 0.88rem; font-weight: 500; line-height: 1.45; }
+  .avulsos small { display: block; max-width: 24rem; margin-top: 0.25rem; color: var(--suave); font-family: var(--f-corpo); font-size: 0.78rem; font-weight: 400; line-height: 1.55; }
   .avulsos dd {
-    font-weight: 600;
+    box-sizing: border-box;
+    margin: 0;
+    font-family: var(--f-corpo);
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--destaque);
+    text-align: right;
+    width: 6.5rem;
+    justify-self: end;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
   .observacao {
@@ -146,5 +227,27 @@ const linkDoPacote = (nome: string) =>
     margin-top: 1.5rem;
     color: var(--suave);
     font-size: 0.92rem;
+  }
+  @media (min-width: 560px) {
+    .pacotes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 960px) {
+    .pacotes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (max-width: 759px) {
+    .pacotes { gap: 1rem; }
+    .destacado {
+      transform: none;
+    }
+    .destacado:hover {
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pacote,
+    .pacote:hover {
+      transform: none;
+      transition: none;
+    }
   }
 </style>

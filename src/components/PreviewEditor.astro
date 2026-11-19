@@ -1,0 +1,1589 @@
+---
+import { c } from '../lib/site';
+const campaignDefaults = c.campanha ?? { mostrar: false, nome: 'Black Friday', chamada: '', texto: '', botao: 'Quero receber os pacotes', inicio: '', fim: '', pacotes: [] };
+---
+
+<aside class="preview-editor" data-preview-editor aria-label="Edição da prévia" data-campaign-defaults={JSON.stringify(campaignDefaults)}>
+  <button class="editor-launcher" type="button" data-editor-open aria-expanded="false">Editar portfólio</button>
+  <div class="editor-file-inputs" aria-hidden="true">
+    <input class="editor-file-input" type="file" accept="video/*,.mp4,.m4v,.mov,.3gp,.3g2,.webm,.avi,.mkv,application/octet-stream" multiple data-editor-video />
+    <input class="editor-file-input" type="file" accept="image/*" multiple data-editor-photo />
+    <input class="editor-file-input" type="file" accept="image/*" multiple data-editor-testimonial />
+    <input class="editor-file-input" type="file" accept="image/png,image/jpeg,image/webp" multiple data-editor-logo />
+  </div>
+  <section class="editor-panel" data-editor-panel hidden aria-label="Ferramentas de edição">
+    <header class="editor-panel-header" aria-label="Arraste para mover o painel">
+      <div><strong>Adicionar ao portfólio</strong><span>Inclua fotos, depoimentos, logos e vídeos</span></div>
+      <button type="button" data-editor-close aria-label="Minimizar painel">×</button>
+    </header>
+    <div class="editor-actions">
+      <button type="button" data-editor-text>Editar títulos e frases</button>
+      <button type="button" data-editor-save>Salvar</button>
+      <button type="button" data-mobile-preview-share>Preparar prévia para o celular</button>
+      <button type="button" data-editor-restore>Restaurar itens removidos</button>
+      <button type="button" data-editor-finish>Concluir edição</button>
+    </div>
+    <div class="editor-text-fields" data-editor-text-fields hidden aria-label="Textos do portfólio"></div>
+    <p class="editor-help">Para editar a faixa que corre no topo, abra “Editar títulos e frases” e altere os campos “Faixa superior”. O botão fixo também pode ser renomeado ali. Para tirar um item, abra a seção dele e toque em “Remover”.</p>
+    <div class="editor-uploads">
+      <label>Trocar foto da capa<input type="file" accept="image/*" data-editor-cover /></label>
+      <label>Trocar foto do contato<input type="file" accept="image/*" data-editor-contact /></label>
+    </div>
+    <section class="campaign-editor" data-campaign-editor aria-label="Editar edição especial">
+      <h3>Edição especial</h3>
+      <p>Prepare uma página própria para Black Friday, Natal, Dia das Mães ou outra ocasião.</p>
+      <label class="campaign-toggle"><input type="checkbox" data-campaign-active /> Mostrar link no portfólio dentro do período</label>
+      <label>Nome da edição<input type="text" data-campaign-name placeholder="Black Friday, Natal e Ano Novo..." /></label>
+      <label>Chamada principal<input type="text" data-campaign-headline placeholder="Uma condição especial para sua marca" /></label>
+      <label>Texto de apresentação<textarea rows="3" data-campaign-description placeholder="Escreva uma breve apresentação da edição"></textarea></label>
+      <div class="campaign-dates">
+        <label>Começa em<input type="date" data-campaign-start /></label>
+        <label>Termina em<input type="date" data-campaign-end /></label>
+      </div>
+      <h4>Pacotes desta edição (até 3)</h4>
+      {[1, 2, 3].map((number) => (
+        <fieldset class="campaign-package" data-campaign-package={number - 1}>
+          <legend>Pacote {String(number).padStart(2, '0')}</legend>
+          <label>Nome<input type="text" data-package-name placeholder="Nome do pacote" /></label>
+          <label>Detalhes<input type="text" data-package-detail placeholder="O que está incluído" /></label>
+          <label>Preço (opcional)<input type="text" data-package-price placeholder="Deixe vazio se preferir informar no WhatsApp" /></label>
+        </fieldset>
+      ))}
+      <button type="button" data-campaign-save>Salvar edição especial</button>
+      <a href="/edicao-especial/" target="_blank" rel="noreferrer">Abrir página da edição especial</a>
+    </section>
+    <p class="editor-status" data-editor-status aria-live="polite">As mudanças ficam guardadas neste navegador. Para publicar, atualize o site.</p>
+  </section>
+</aside>
+
+<script>
+  const stateKey = 'deisyane-preview-editor-state-v1';
+  const databaseName = 'deisyane-preview-editor-media-v1';
+  const mobilePreviewToken = new URLSearchParams(location.search).get('mobile-preview');
+  const sharedSnapshot = mobilePreviewToken ? await fetch(`/__preview_share/${encodeURIComponent(mobilePreviewToken)}/state`, { cache: 'no-store' }).then((response) => response.ok ? response.json() : null).catch(() => null) : null;
+  const sharedState = sharedSnapshot?.state || null;
+  const sharedMediaIds = new Set<string>(sharedSnapshot?.mediaIds || []);
+  const editor = document.querySelector<HTMLElement>('[data-preview-editor]');
+  const panel = editor?.querySelector<HTMLElement>('[data-editor-panel]');
+  const status = editor?.querySelector<HTMLElement>('[data-editor-status]');
+  const textButton = editor?.querySelector<HTMLButtonElement>('[data-editor-text]');
+  const campaignDefaults = (() => {
+    try { return JSON.parse(editor?.dataset.campaignDefaults || '{}'); } catch { return {}; }
+  })() as { mostrar?: boolean; nome?: string; chamada?: string; texto?: string; botao?: string; inicio?: string; fim?: string; pacotes?: { nome?: string; detalhe?: string; preco?: string }[] };
+  const state = (() => {
+    if (sharedState) return sharedState;
+    try { return JSON.parse(localStorage.getItem(stateKey) || '{"texts":{},"deleted":[],"orders":{},"media":[],"itemTexts":{},"niches":{},"customNiches":[]}'); }
+    catch { return { texts: {}, deleted: [], orders: {}, media: [], itemTexts: {}, niches: {}, customNiches: [] }; }
+  })() as {
+    texts: Record<string, string>;
+    deleted: string[];
+    orders: Record<string, string[]>;
+    itemTexts: Record<string, string>;
+    niches: Record<string, string>;
+    customNiches: { key: string; label: string }[];
+    migrations?: string[];
+    media: { id: string; kind: 'video' | 'photo' | 'logo' | 'testimonial'; name: string; niche: string; list: string }[];
+    replacements: Record<string, string>;
+    campaign?: { active: boolean; name: string; headline: string; description: string; start: string; end: string; packages: { name: string; detail: string; price: string }[] };
+  };
+  state.itemTexts ??= {};
+  state.texts ??= {};
+  state.niches ??= {};
+  state.customNiches ??= [];
+  state.media ??= [];
+  state.orders ??= {};
+  Object.entries(state.niches).forEach(([key, niche]) => { if (niche === 'todos') delete state.niches[key]; });
+  Object.keys(state.itemTexts).forEach((key) => {
+    if (key.endsWith(':format') && state.itemTexts[key] === 'Crie um nicho primeiro') state.itemTexts[key] = 'Outros';
+  });
+  state.media.forEach((media) => { if (media.kind === 'video' && media.niche === 'todos') media.niche = 'outros'; });
+  state.replacements ??= {};
+  state.campaign ??= {
+    active: campaignDefaults.mostrar ?? false,
+    name: campaignDefaults.nome ?? 'Black Friday',
+    headline: campaignDefaults.chamada ?? '',
+    description: campaignDefaults.texto ?? '',
+    start: campaignDefaults.inicio ?? '',
+    end: campaignDefaults.fim ?? '',
+    packages: Array.from({ length: 3 }, (_, index) => ({
+      name: campaignDefaults.pacotes?.[index]?.nome ?? '',
+      detail: campaignDefaults.pacotes?.[index]?.detalhe ?? '',
+      price: campaignDefaults.pacotes?.[index]?.preco ?? '',
+    })),
+  };
+  state.campaign.packages = Array.from({ length: 3 }, (_, index) => state.campaign!.packages[index] ?? { name: '', detail: '', price: '' });
+  state.migrations ??= [];
+  if (!state.migrations.includes('testimonial-prints-v2')) {
+    state.media.filter((media) => media.kind === 'testimonial').forEach((media) => {
+      if (!state.deleted.includes(media.id)) state.deleted.push(media.id);
+    });
+    state.migrations.push('testimonial-prints-v2');
+  }
+  const normalizeMediaName = (name: string) => name.replace(/\s*\(\d+\)(?=\.[^.]+$)/, '').replace(/\.[^.]+$/, '').trim().toLocaleLowerCase();
+  const namesAlreadyUsedAsLogos = new Set(state.media.filter((media) => media.kind === 'logo').map((media) => normalizeMediaName(media.name)));
+  state.media.forEach((media) => {
+    if (media.kind === 'photo' && namesAlreadyUsedAsLogos.has(normalizeMediaName(media.name)) && !state.deleted.includes(media.id)) state.deleted.push(media.id);
+  });
+
+  const saveState = () => {
+    try { localStorage.setItem(stateKey, JSON.stringify(state)); return true; }
+    catch { if (status) status.textContent = 'O navegador não conseguiu guardar o rascunho.'; return false; }
+  };
+  const openDatabase = () => new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(databaseName, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('media');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  const putFile = async (id: string, file: Blob) => {
+    const db = await openDatabase();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction('media', 'readwrite');
+      transaction.objectStore('media').put(file, id);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    db.close();
+  };
+  const deleteFile = async (id: string) => {
+    const db = await openDatabase();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction('media', 'readwrite');
+      transaction.objectStore('media').delete(id);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    db.close();
+  };
+  const deleteUploadedBrandLogo = async (id: string) => {
+    const metadataKey = 'deisyane-preview-brand-logos-v1';
+    const databaseName = 'deisyane-preview-brand-logo-files-v1';
+    const logos = JSON.parse(localStorage.getItem(metadataKey) || '[]') as { id: string; name: string }[];
+    localStorage.setItem(metadataKey, JSON.stringify(logos.filter((logo) => logo.id !== id)));
+    const request = indexedDB.open(databaseName, 1);
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onupgradeneeded = () => request.result.createObjectStore('logos');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction('logos', 'readwrite');
+      transaction.objectStore('logos').delete(id);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    db.close();
+  };
+  const getFile = async (id: string) => {
+    const db = await openDatabase();
+    const file = await new Promise<Blob | undefined>((resolve, reject) => {
+      const request = db.transaction('media').objectStore('media').get(id);
+      request.onsuccess = () => resolve(request.result as Blob | undefined);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    if (file || !mobilePreviewToken || !sharedMediaIds.has(id)) return file;
+    const response = await fetch(`/__preview_share/${encodeURIComponent(mobilePreviewToken)}/media/${encodeURIComponent(id)}`, { cache: 'no-store' }).catch(() => undefined);
+    return response?.ok ? response.blob() : undefined;
+  };
+  let ffmpegPromise: Promise<import('@ffmpeg/ffmpeg').FFmpeg> | undefined;
+  let videoConversionQueue = Promise.resolve();
+  const videoConversions = new Map<string, Promise<File>>();
+  let ffmpegErrorDetails: string[] = [];
+  const loadVideoConverter = () => {
+    if (!ffmpegPromise) ffmpegPromise = (async () => {
+      const [{ FFmpeg }, assets] = await Promise.all([import('@ffmpeg/ffmpeg'), import('../lib/ffmpeg-assets')]);
+      const ffmpeg = new FFmpeg();
+      ffmpeg.on('log', ({ type, message }) => {
+        if (type === 'stderr' && message.trim()) {
+          ffmpegErrorDetails.push(message.trim());
+          if (ffmpegErrorDetails.length > 12) ffmpegErrorDetails.shift();
+        }
+      });
+      ffmpeg.on('progress', ({ progress }) => {
+        if (Number.isFinite(progress) && progress > 0) {
+          const message = `Preparando imagem do vídeo: ${Math.min(99, Math.round(progress * 100))}%.`;
+          if (status) status.textContent = message;
+          const overlay = document.querySelector<HTMLElement>('.video-conversion-overlay:not([hidden])');
+          if (overlay) overlay.textContent = message;
+        }
+      });
+      const decodeBase64 = (value: string) => Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+      const coreURL = URL.createObjectURL(new Blob([decodeBase64(assets.ffmpegCoreBase64)], { type: 'text/javascript' }));
+      const compressedWasm = new Blob([decodeBase64(assets.ffmpegWasmGzipBase64)]);
+      const wasm = await new Response(compressedWasm.stream().pipeThrough(new DecompressionStream('gzip'))).blob();
+      const wasmURL = URL.createObjectURL(wasm);
+      try {
+        await ffmpeg.load({ coreURL, wasmURL });
+      } finally {
+        URL.revokeObjectURL(coreURL);
+        URL.revokeObjectURL(wasmURL);
+      }
+      return ffmpeg;
+    })();
+    return ffmpegPromise;
+  };
+  const transcodeToCompatibleMp4 = (source: Blob, filename: string, id: string, mobilePreview = false) => {
+    const inProgress = videoConversions.get(id);
+    if (inProgress) return inProgress;
+    const convert = async () => {
+      const ffmpeg = await loadVideoConverter();
+      const extension = filename.split('.').pop()?.toLowerCase() || 'mov';
+      const inputName = `compat-input-${id}.${extension}`;
+      const outputName = `compat-output-${id}.mp4`;
+      try {
+        await ffmpeg.writeFile(inputName, new Uint8Array(await source.arrayBuffer()));
+        ffmpegErrorDetails = [];
+        const args = mobilePreview
+          ? ['-i', inputName, '-map', '0:v:0', '-map', '0:a:0?', '-vf', "scale=w='min(720,iw)':h=-2:flags=lanczos", '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '24', '-maxrate', '1800k', '-bufsize', '3600k', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', outputName]
+          : ['-i', inputName, '-map', '0:v:0', '-map', '0:a:0?', '-vf', "scale=w='min(1080,iw)':h=-2:flags=lanczos", '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', outputName];
+        const exitCode = await ffmpeg.exec(args);
+        if (exitCode !== 0) throw new Error(ffmpegErrorDetails.slice(-5).join(' ') || `A conversão terminou com o código ${exitCode}.`);
+        const result = await ffmpeg.readFile(outputName);
+        const bytes = result instanceof Uint8Array ? new Uint8Array(result) : new TextEncoder().encode(result);
+        return new File([bytes], `${filename.replace(/\.[^.]+$/, '')}.mp4`, { type: 'video/mp4' });
+      } finally {
+        await Promise.all([inputName, outputName].map((name) => ffmpeg.deleteFile(name).catch(() => undefined)));
+      }
+    };
+    const task = videoConversionQueue.then(convert, convert);
+    videoConversions.set(id, task);
+    videoConversionQueue = task.then(() => undefined, () => undefined);
+    void task.finally(() => { if (videoConversions.get(id) === task) videoConversions.delete(id); }).catch(() => undefined);
+    return task;
+  };
+  const trimLogoWhitespace = async (file: Blob): Promise<Blob> => {
+    try {
+      const source = await createImageBitmap(file);
+      const canvas = document.createElement('canvas');
+      canvas.width = source.width;
+      canvas.height = source.height;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      if (!context) return file;
+      context.drawImage(source, 0, 0);
+      const { data } = context.getImageData(0, 0, source.width, source.height);
+      let left = source.width, top = source.height, right = -1, bottom = -1;
+      for (let y = 0; y < source.height; y += 2) for (let x = 0; x < source.width; x += 2) {
+        const offset = (y * source.width + x) * 4;
+        const alpha = data[offset + 3];
+        const nearWhite = data[offset] > 248 && data[offset + 1] > 248 && data[offset + 2] > 248;
+        if (alpha < 24 || nearWhite) continue;
+        left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y);
+      }
+      source.close();
+      if (right < left || bottom < top) return file;
+      const padX = Math.max(4, Math.round((right - left) * 0.035));
+      const padY = Math.max(4, Math.round((bottom - top) * 0.12));
+      left = Math.max(0, left - padX); top = Math.max(0, top - padY);
+      right = Math.min(canvas.width - 1, right + padX); bottom = Math.min(canvas.height - 1, bottom + padY);
+      const cropped = document.createElement('canvas');
+      cropped.width = right - left + 1; cropped.height = bottom - top + 1;
+      const croppedContext = cropped.getContext('2d');
+      if (!croppedContext) return file;
+      croppedContext.drawImage(canvas, left, top, cropped.width, cropped.height, 0, 0, cropped.width, cropped.height);
+      return await new Promise<Blob>((resolve) => cropped.toBlob((blob) => resolve(blob || file), 'image/png'));
+    } catch { return file; }
+  };
+  const optimizePhotoForCarousel = async (file: File): Promise<File> => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file;
+    let bitmap: ImageBitmap | undefined;
+    try {
+      bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1200 / bitmap.width, 1600 / bitmap.height);
+      if (scale === 1 && file.size < 500 * 1024) return file;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) return file;
+      context.imageSmoothingQuality = 'high';
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const optimized = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.84));
+      if (!optimized || optimized.size >= file.size) return file;
+      return new File([optimized], file.name, { type: 'image/webp', lastModified: file.lastModified });
+    } catch { return file; }
+    finally { bitmap?.close(); }
+  };
+  const getPhotoDisplayFile = async (id: string, original: File): Promise<File> => {
+    const cacheId = `${id}:carousel`;
+    const cached = await getFile(cacheId).catch(() => undefined);
+    if (cached) return cached instanceof File ? cached : new File([cached], original.name, { type: cached.type || 'image/webp' });
+    const optimized = await optimizePhotoForCarousel(original);
+    if (optimized !== original) await putFile(cacheId, optimized).catch(() => undefined);
+    return optimized;
+  };
+    const setSlotImage = (slot: 'cover' | 'contact', file: Blob) => {
+      const figure = document.querySelector<HTMLElement>(slot === 'cover' ? '.topo .foto' : '#contato .foto-contato');
+      const oldImage = figure?.querySelector<HTMLImageElement>('img');
+      if (!figure || !oldImage) return;
+      const image = document.createElement('img');
+      image.src = URL.createObjectURL(file);
+      image.alt = oldImage.alt;
+      image.loading = oldImage.loading;
+      const picture = oldImage.closest('picture');
+      if (picture) picture.replaceWith(image);
+      else oldImage.replaceWith(image);
+    };
+    const setSlotFile = (input: HTMLInputElement, slot: 'cover' | 'contact') => {
+      input.addEventListener('change', async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const id = `replacement-${slot}`;
+        try {
+          await putFile(id, file);
+          state.replacements[slot] = id;
+          setSlotImage(slot, file);
+          saveState();
+          if (status) status.textContent = 'Foto trocada e salva neste navegador.';
+        } catch {
+          if (status) status.textContent = 'Não foi possível guardar esta foto neste navegador.';
+        }
+        input.value = '';
+      });
+    };
+    if (editor) {
+      setSlotFile(editor.querySelector<HTMLInputElement>('[data-editor-cover]')!, 'cover');
+      setSlotFile(editor.querySelector<HTMLInputElement>('[data-editor-contact]')!, 'contact');
+      void (async () => {
+        for (const slot of ['cover', 'contact'] as const) {
+          const id = state.replacements[slot];
+          if (!id) continue;
+          const file = await getFile(id).catch(() => undefined);
+          if (file) setSlotImage(slot, file);
+        }
+      })();
+    }
+  const cleanKey = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'outros';
+  const setText = (element: HTMLElement, value: string) => {
+    const key = element.dataset.previewText;
+    const targets = key
+      ? [...document.querySelectorAll<HTMLElement>(`[data-preview-text="${CSS.escape(key)}"]`)]
+      : [element];
+    for (const target of targets) {
+      if (target.matches('.topo h1')) {
+        const [first, ...rest] = value.trim().split(/\s+/);
+        const emphasized = target.querySelector('em');
+        if (emphasized) {
+          target.childNodes[0].textContent = first || '';
+          emphasized.textContent = rest.join(' ');
+        } else target.textContent = value;
+      } else if (target.matches('summary') && target.querySelector('span[aria-hidden="true"]')) {
+        const firstText = [...target.childNodes].find((node) => node.nodeType === Node.TEXT_NODE);
+        if (firstText) firstText.textContent = value;
+      } else target.textContent = value;
+    }
+  };
+
+  if (editor && panel) {
+    if (mobilePreviewToken) editor.hidden = true;
+    const shareButton = editor.querySelector<HTMLButtonElement>('[data-mobile-preview-share]');
+    shareButton?.addEventListener('click', async () => {
+      shareButton.disabled = true;
+      if (status) {
+        status.textContent = 'Preparando a prévia do celular…';
+        status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      const token = crypto.randomUUID();
+      try {
+        const brands: { id: string; name: string }[] = JSON.parse(localStorage.getItem('deisyane-preview-brand-logos-v1') || '[]');
+        const brandFiles = await (async () => {
+          const request = indexedDB.open('deisyane-preview-brand-logo-files-v1', 1);
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const files = await Promise.all(brands.map(async (brand) => {
+            const file = await new Promise<Blob | undefined>((resolve, reject) => {
+              const read = db.transaction('logos').objectStore('logos').get(brand.id);
+              read.onsuccess = () => resolve(read.result as Blob | undefined);
+              read.onerror = () => reject(read.error);
+            });
+            return file ? { id: `brand-logo:${brand.id}`, file } : undefined;
+          }));
+          db.close();
+          return files.filter((item): item is { id: string; file: Blob } => !!item);
+        })();
+        const stateResponse = await fetch(`/__preview_share/${token}/state`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state, brands: brands.filter((brand) => brandFiles.some((item) => item.id === `brand-logo:${brand.id}`)) }),
+        });
+        if (!stateResponse.ok) throw new Error('Não consegui preparar os dados da prévia.');
+        const mediaIds = new Set<string>([
+          ...state.media.filter((item) => !state.deleted.includes(item.id)).map((item) => item.id),
+          ...Object.values(state.replacements).filter((id): id is string => typeof id === 'string' && !state.deleted.includes(id)),
+        ]);
+        let total = 0;
+        const sharedVideosByHash = new Map<string, { id: string; posterId?: string }>();
+        const makeVideoPoster = async (file: Blob): Promise<Blob | undefined> => {
+          const objectUrl = URL.createObjectURL(file);
+          const video = document.createElement('video');
+          video.muted = true;
+          video.preload = 'auto';
+          video.src = objectUrl;
+          try {
+            await new Promise<void>((resolve, reject) => {
+              video.addEventListener('loadedmetadata', () => {
+                if (video.duration > 0.2) video.currentTime = Math.min(0.15, video.duration / 2);
+                else resolve();
+              }, { once: true });
+              video.addEventListener('seeked', () => resolve(), { once: true });
+              video.addEventListener('loadeddata', () => resolve(), { once: true });
+              video.addEventListener('error', () => reject(new Error('Não consegui ler a imagem deste vídeo.')), { once: true });
+            });
+            if (!video.videoWidth || !video.videoHeight) return undefined;
+            const canvas = document.createElement('canvas');
+            const width = Math.min(540, video.videoWidth);
+            canvas.width = width;
+            canvas.height = Math.round(width * video.videoHeight / video.videoWidth);
+            const context = canvas.getContext('2d');
+            if (!context) return undefined;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return await new Promise<Blob | undefined>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86));
+          } catch {
+            return undefined;
+          } finally {
+            video.pause();
+            video.removeAttribute('src');
+            URL.revokeObjectURL(objectUrl);
+          }
+        };
+        for (const id of mediaIds) {
+          let file = await getFile(id).catch(() => undefined) || await getFile(`${id}:original`).catch(() => undefined);
+          if (!file) continue;
+          const record = state.media.find((media) => media.id === id);
+          let posterBlob: Blob | undefined;
+          let videoHash: string | undefined;
+          if (record?.kind === 'video') {
+            if (status) {
+              status.textContent = `Preparando “${record.name}” para reproduzir em celulares. Isso pode levar alguns minutos…`;
+              status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            try {
+              const mobileCacheId = `${id}:mobile-preview`;
+              const cachedMobileFile = await getFile(mobileCacheId).catch(() => undefined);
+              if (cachedMobileFile) {
+                file = cachedMobileFile instanceof File ? cachedMobileFile : new File([cachedMobileFile], `${record.name.replace(/\.[^.]+$/, '')}.mp4`, { type: 'video/mp4' });
+              } else if (file.type !== 'video/mp4' || file.size > 8 * 1024 * 1024) {
+                const pendingConversion = videoConversions.get(id);
+                const source = pendingConversion ? await pendingConversion : file;
+                file = await transcodeToCompatibleMp4(source, record.name, `${id}-mobile`, true);
+                await putFile(mobileCacheId, file).catch(() => undefined);
+              }
+              let poster = await makeVideoPoster(file);
+              if (!poster) {
+                file = await transcodeToCompatibleMp4(file, record.name, `${id}-mobile`, true);
+                await putFile(`${id}:mobile-preview`, file).catch(() => undefined);
+                poster = await makeVideoPoster(file);
+              }
+              posterBlob = poster;
+              const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+              videoHash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+            } catch (error) {
+              console.warn('Não foi possível preparar este vídeo para celulares:', error);
+            }
+          }
+          const previousVideo = videoHash ? sharedVideosByHash.get(videoHash) : undefined;
+          if (previousVideo) {
+            const aliasResponse = await fetch(`/__preview_share/${token}/media/${encodeURIComponent(id)}`, {
+              method: 'PUT', headers: { 'x-preview-share-copy-from': previousVideo.id },
+            });
+            if (!aliasResponse.ok) throw new Error('Não consegui reutilizar um vídeo repetido na prévia.');
+            if (previousVideo.posterId) {
+              const posterAliasResponse = await fetch(`/__preview_share/${token}/media/${encodeURIComponent(`${id}:poster`)}`, {
+                method: 'PUT', headers: { 'x-preview-share-copy-from': previousVideo.posterId },
+              });
+              if (posterAliasResponse.ok) total += 1;
+            }
+            total += 1;
+            continue;
+          }
+          const response = await fetch(`/__preview_share/${token}/media/${encodeURIComponent(id)}`, {
+            method: 'PUT', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file,
+          });
+          if (!response.ok) throw new Error('Um dos arquivos não pôde ser incluído na prévia.');
+          total += 1;
+          if (videoHash) {
+            let posterId: string | undefined;
+            if (posterBlob) {
+              posterId = `${id}:poster`;
+              const posterResponse = await fetch(`/__preview_share/${token}/media/${encodeURIComponent(posterId)}`, {
+                method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: posterBlob,
+              });
+              if (posterResponse.ok) total += 1;
+              else posterId = undefined;
+            }
+            sharedVideosByHash.set(videoHash, { id, posterId });
+          }
+        }
+        for (const { id, file } of brandFiles) {
+          const response = await fetch(`/__preview_share/${token}/media/${encodeURIComponent(id)}`, {
+            method: 'PUT', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file,
+          });
+          if (!response.ok) throw new Error('Uma das logos das marcas não pôde ser incluída na prévia.');
+          total += 1;
+        }
+        // Em uma prévia local, gere um endereço da rede Wi-Fi atual do computador.
+        // Se o editor já estiver aberto por um endereço público, mantenha essa origem.
+        let previewOrigin = location.origin;
+        if (['localhost', '127.0.0.1', '::1'].includes(location.hostname)) {
+          const network = await fetch('/__preview_share/network-origin', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null).catch(() => null);
+          if (!network?.origin) throw new Error('Não encontrei o endereço Wi-Fi do computador. Verifique se o celular e o computador estão na mesma rede.');
+          previewOrigin = network.origin;
+        }
+        const link = new URL('/', previewOrigin);
+        link.searchParams.set('mobile-preview', token);
+        const openLink = document.createElement('a');
+        openLink.href = link.href;
+        openLink.textContent = link.href;
+        openLink.target = '_blank';
+        openLink.rel = 'noopener';
+        if (status) {
+          const copyButton = document.createElement('button');
+          copyButton.type = 'button';
+          copyButton.textContent = 'Copiar link';
+          copyButton.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(link.href);
+              copyButton.textContent = 'Link copiado';
+            } catch {
+              copyButton.textContent = 'Selecione e copie o link acima';
+              openLink.focus();
+            }
+          });
+          status.replaceChildren(document.createTextNode(`Prévia pronta com ${total} arquivo(s). No celular, use a mesma rede Wi-Fi do computador e abra: `), openLink, copyButton);
+          status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } catch (error) {
+        if (status) {
+          status.textContent = error instanceof Error ? `Não consegui preparar a prévia: ${error.message}` : 'Não consegui preparar a prévia para o celular.';
+          status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } finally {
+        shareButton.disabled = false;
+      }
+    });
+    const refreshMovingGalleries = () => {
+      window.dispatchEvent(new Event('brand-media-updated'));
+      window.dispatchEvent(new Event('testimonial-media-updated'));
+    };
+    const launcher = editor.querySelector<HTMLButtonElement>('[data-editor-open]');
+    const dragHandle = panel.querySelector<HTMLElement>('.editor-panel-header');
+    let panelDrag: { pointerId: number; startX: number; startY: number; left: number; top: number } | null = null;
+    dragHandle?.addEventListener('pointerdown', (event: PointerEvent) => {
+      if (event.button !== 0 || (event.target as Element).closest('button, input, textarea, select, a')) return;
+      const rect = panel.getBoundingClientRect();
+      panelDrag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, left: rect.left, top: rect.top };
+      panel.style.left = `${rect.left}px`;
+      panel.style.top = `${rect.top}px`;
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+      dragHandle.setPointerCapture(event.pointerId);
+    });
+    dragHandle?.addEventListener('pointermove', (event: PointerEvent) => {
+      if (!panelDrag || panelDrag.pointerId !== event.pointerId) return;
+      const left = panelDrag.left + event.clientX - panelDrag.startX;
+      const top = panelDrag.top + event.clientY - panelDrag.startY;
+      panel.style.left = `${Math.max(8, Math.min(window.innerWidth - panel.offsetWidth - 8, left))}px`;
+      panel.style.top = `${Math.max(8, Math.min(window.innerHeight - panel.offsetHeight - 8, top))}px`;
+    });
+    const stopPanelDrag = (event: PointerEvent) => {
+      if (!panelDrag || panelDrag.pointerId !== event.pointerId) return;
+      panelDrag = null;
+      if (dragHandle.hasPointerCapture(event.pointerId)) dragHandle.releasePointerCapture(event.pointerId);
+    };
+    dragHandle?.addEventListener('pointerup', stopPanelDrag);
+    dragHandle?.addEventListener('pointercancel', stopPanelDrag);
+    const closeInlineEditors = () => {
+      document.querySelectorAll<HTMLElement>('.preview-fields-open').forEach((node) => {
+        node.classList.remove('preview-fields-open');
+        const button = node.querySelector<HTMLButtonElement>('.preview-print-edit');
+        if (button) {
+          button.textContent = 'Editar';
+          button.setAttribute('aria-expanded', 'false');
+        }
+      });
+    };
+    const open = () => { panel.hidden = false; launcher?.setAttribute('aria-expanded', 'true'); editor.classList.add('aberto'); document.body.classList.add('preview-editor-open'); refreshMovingGalleries(); setTextEditing(false); };
+    const minimize = () => { panel.hidden = true; launcher?.setAttribute('aria-expanded', 'false'); editor.classList.remove('aberto'); closeInlineEditors(); document.body.classList.remove('preview-editor-open'); refreshMovingGalleries(); setTextEditing(false); };
+    const finish = () => { panel.hidden = true; launcher?.setAttribute('aria-expanded', 'false'); editor.classList.remove('aberto'); closeInlineEditors(); document.body.classList.remove('preview-editor-open'); refreshMovingGalleries(); setTextEditing(false); };
+    launcher?.addEventListener('click', open);
+    editor.querySelector('[data-editor-close]')?.addEventListener('click', minimize);
+    editor.querySelector('[data-editor-finish]')?.addEventListener('click', finish);
+
+    const campaignEditor = editor.querySelector<HTMLElement>('[data-campaign-editor]');
+    if (campaignEditor && state.campaign) {
+      const activeInput = campaignEditor.querySelector<HTMLInputElement>('[data-campaign-active]');
+      const nameInput = campaignEditor.querySelector<HTMLInputElement>('[data-campaign-name]');
+      const headlineInput = campaignEditor.querySelector<HTMLInputElement>('[data-campaign-headline]');
+      const descriptionInput = campaignEditor.querySelector<HTMLTextAreaElement>('[data-campaign-description]');
+      const startInput = campaignEditor.querySelector<HTMLInputElement>('[data-campaign-start]');
+      const endInput = campaignEditor.querySelector<HTMLInputElement>('[data-campaign-end]');
+      activeInput!.checked = state.campaign.active;
+      nameInput!.value = state.campaign.name;
+      headlineInput!.value = state.campaign.headline;
+      descriptionInput!.value = state.campaign.description;
+      startInput!.value = state.campaign.start;
+      endInput!.value = state.campaign.end;
+      campaignEditor.querySelectorAll<HTMLElement>('[data-campaign-package]').forEach((fieldset, index) => {
+        const item = state.campaign!.packages[index];
+        fieldset.querySelector<HTMLInputElement>('[data-package-name]')!.value = item.name;
+        fieldset.querySelector<HTMLInputElement>('[data-package-detail]')!.value = item.detail;
+        fieldset.querySelector<HTMLInputElement>('[data-package-price]')!.value = item.price;
+      });
+      campaignEditor.querySelector('[data-campaign-save]')?.addEventListener('click', () => {
+        state.campaign = {
+          active: activeInput!.checked,
+          name: nameInput!.value.trim() || 'Edição especial',
+          headline: headlineInput!.value.trim(),
+          description: descriptionInput!.value.trim(),
+          start: startInput!.value,
+          end: endInput!.value,
+          packages: [...campaignEditor.querySelectorAll<HTMLElement>('[data-campaign-package]')].map((fieldset) => ({
+            name: fieldset.querySelector<HTMLInputElement>('[data-package-name]')!.value.trim(),
+            detail: fieldset.querySelector<HTMLInputElement>('[data-package-detail]')!.value.trim(),
+            price: fieldset.querySelector<HTMLInputElement>('[data-package-price]')!.value.trim(),
+          })),
+        };
+        if (saveState()) {
+          window.dispatchEvent(new CustomEvent('special-campaign-updated', { detail: state.campaign }));
+          if (status) status.textContent = 'Edição especial salva neste navegador. Abra a página para conferir.';
+        }
+      });
+    }
+
+    const textNodes = [...document.querySelectorAll<HTMLElement>(
+      '.mensagem-faixa, .faixa-orcamento, .cta-pacotes-fixo [data-preview-text-key], .topo h1, .topo .kicker, .topo .creator-hook, .topo .bio, .pagina h2, .pagina h3, .pagina p, .pagina summary, .pagina dt, .pagina dd, .pagina figcaption, .pagina .observacao, .pagina .detalhe, .pagina .etiqueta, .pagina .preco, .pagina .formato, .pagina .rotulo-marcas, .pagina .rede, .pagina a.botao, .rodape p',
+    )].filter((node) => !node.closest('[data-preview-editor], [data-preview-media-tools], #videos [data-video-item], #fotografias .grade, #marcas .cartoes'));
+    const textIsIgnored = (node: HTMLElement) => !!node.closest('[data-preview-text-ignore]');
+    const textValue = (node: HTMLElement) => node.matches('summary')
+      ? [...node.childNodes].find((child) => child.nodeType === Node.TEXT_NODE)?.textContent?.trim() || ''
+      : node.matches('.topo h1') ? node.innerText.trim() : node.textContent?.trim() || '';
+    const textScopePositions = new Map<string, number>();
+    let testimonialTitleMigrated = false;
+    textNodes.forEach((node) => {
+      const scope = node.closest<HTMLElement>('section[id]') || node.closest<HTMLElement>('.topo') || node.closest<HTMLElement>('[id]');
+      const scopeKey = scope?.id || (scope?.className ? String(scope.className).replace(/[^a-z0-9_-]+/gi, '-') : 'document');
+      const position = textScopePositions.get(scopeKey) || 0;
+      textScopePositions.set(scopeKey, position + 1);
+      const key = node.dataset.previewTextKey || `text-v2-${scopeKey}-${position}`;
+      node.dataset.previewText = key;
+      if (textIsIgnored(node)) return;
+      if (key === 'section-testimonials-title' && /^palavras de quem já (?:criou|trabalhou) comigo\.?$/iu.test(state.texts[key] || '')) {
+        state.texts[key] = 'Depoimentos';
+        testimonialTitleMigrated = true;
+      }
+      if (key in state.texts) setText(node, state.texts[key]);
+    });
+    if (testimonialTitleMigrated && !sharedState) saveState();
+
+    const textFields = editor.querySelector<HTMLElement>('[data-editor-text-fields]');
+    const describeText = (node: HTMLElement, index: number) => {
+      if (node.matches('.mensagem-faixa')) return 'Faixa superior · Texto rolante';
+      if (node.matches('.faixa-orcamento')) return 'Faixa superior · Botão de contato';
+      if (node.closest('.cta-pacotes-fixo')) return 'Botão fixo · Texto do botão';
+      const section = node.closest<HTMLElement>('section[id]');
+      const sectionTitle = section?.querySelector<HTMLElement>('h2')?.textContent?.trim();
+      const area = sectionTitle || (node.closest('.topo') ? 'Apresentação' : node.closest('.rodape') ? 'Rodapé' : 'Portfólio');
+      const kind = node.matches('.topo h1, h2') ? 'Título'
+        : node.matches('h3') ? 'Subtítulo'
+        : node.matches('.topo .kicker, .topo .creator-hook') ? 'Frase de destaque'
+        : node.matches('a.botao, .rede') ? 'Botão ou link'
+        : node.matches('summary') ? 'Pergunta frequente'
+        : node.matches('dt, dd') ? 'Informação'
+        : 'Texto';
+      return `${area} · ${kind} ${index + 1}`;
+    };
+    const buildTextFields = () => {
+      if (!textFields) return;
+      textFields.replaceChildren();
+      const addedKeys = new Set<string>();
+      textNodes.forEach((node, index) => {
+        if (textIsIgnored(node)) return;
+        const key = node.dataset.previewText || `text-${index}`;
+        if (addedKeys.has(key)) return;
+        addedKeys.add(key);
+        const label = document.createElement('label');
+        label.textContent = describeText(node, index);
+        const input = document.createElement('textarea');
+        input.rows = Math.min(5, Math.max(2, Math.ceil((textValue(node).length || 50) / 52)));
+        input.value = textValue(node);
+        input.addEventListener('input', () => {
+          setText(node, input.value);
+          state.texts[node.dataset.previewText!] = textValue(node);
+          saveState();
+          if (status) status.textContent = 'Texto atualizado e salvo neste navegador.';
+        });
+        label.append(input);
+        textFields.append(label);
+      });
+    };
+    const setTextEditing = (enabled: boolean) => {
+      document.body.classList.toggle('preview-text-editing', enabled);
+      if (textFields) textFields.hidden = !enabled;
+      if (enabled) buildTextFields();
+      if (textButton) textButton.textContent = enabled ? 'Fechar edição de textos' : 'Editar títulos e frases';
+      if (!enabled) saveEditedTexts();
+    };
+    const saveEditedTexts = () => {
+      textNodes.forEach((node) => { if (!textIsIgnored(node)) state.texts[node.dataset.previewText!] = textValue(node); });
+      saveState();
+      if (status) status.textContent = 'Textos salvos automaticamente neste navegador.';
+    };
+    textNodes.forEach((node) => {
+      if (textIsIgnored(node)) return;
+      node.addEventListener('input', () => {
+        state.texts[node.dataset.previewText!] = textValue(node);
+        saveState();
+        if (status) status.textContent = 'Alteração salva neste navegador.';
+      });
+    });
+    textButton?.addEventListener('click', () => setTextEditing(textFields?.hidden ?? true));
+    editor.querySelector('[data-editor-save]')?.addEventListener('click', () => {
+      saveEditedTexts();
+      if (status) status.textContent = 'Alterações salvas neste navegador. Para publicar, atualize o site.';
+    });
+
+
+    const nicheSelect = document.createElement('select');
+    nicheSelect.dataset.editorNiche = '';
+    const nicheDisplayName = (key: string, label = '') => ({ moda: 'Moda', tech: 'Tecnologia', tecnologia: 'Tecnologia' }[key] || label || key.replace(/-/g, ' '));
+    const nicheLabels = new Map([...document.querySelectorAll<HTMLButtonElement>('#videos [data-filter]')]
+      .map((button) => [button.dataset.filter || '', button.textContent?.trim() || '']));
+    const nicheOptions = () => {
+      const options = new Map<string, string>();
+      state.customNiches.forEach(({ key, label }) => options.set(key, nicheDisplayName(key, label)));
+      document.querySelectorAll<HTMLElement>('#videos [data-video-item]').forEach((card) => {
+        if (card.dataset.previewRemoved === 'true') return;
+        const key = card.dataset.nicho || 'outros';
+        if (key !== 'todos') options.set(key, nicheDisplayName(key, card.dataset.nichoLabel || nicheLabels.get(key) || (key === 'outros' ? 'Outros' : '')));
+      });
+      return [...options.entries()];
+    };
+    const fillNicheSelect = (select: HTMLSelectElement, selected = '') => {
+      const options = nicheOptions();
+      const choices = options.map(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        return option;
+      });
+      if (!options.length) {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Crie um nicho primeiro';
+        choices.unshift(placeholder);
+      }
+      select.replaceChildren(...choices);
+      select.value = options.some(([value]) => value === selected) ? selected : (options[0]?.[0] || '');
+    };
+    const refreshNicheSelects = () => {
+      fillNicheSelect(nicheSelect, nicheSelect.value || '');
+      document.querySelectorAll<HTMLElement>('#videos [data-preview-media-key]').forEach((card) => {
+        const select = card.querySelector<HTMLSelectElement>('.preview-media-fields select');
+        if (select) fillNicheSelect(select, state.niches[card.dataset.previewMediaKey!] ?? card.dataset.nicho ?? '');
+      });
+    };
+    fillNicheSelect(nicheSelect);
+
+    const items = () => [
+      ...document.querySelectorAll<HTMLElement>('#videos [data-video-item]'),
+      ...document.querySelectorAll<HTMLElement>('#fotografias .grade > li:not([data-photo-clone])'),
+      ...document.querySelectorAll<HTMLElement>('#marcas .cartoes > li:not([data-brand-clone])'),
+      ...document.querySelectorAll<HTMLElement>('#resultados [data-testimonial-track] > figure'),
+    ];
+    const getListKey = (node: HTMLElement) => node.closest('#videos') ? 'videos'
+      : node.closest('#fotografias') ? 'fotografias'
+      : node.closest('#marcas') ? 'marcas' : 'resultados';
+    const itemKey = (node: HTMLElement) => node.dataset.previewMediaKey || '';
+    const persistOrder = (list: string) => {
+      const parent = document.querySelector<HTMLElement>(`#${list === 'videos' ? 'videos' : list === 'fotografias' ? 'fotografias' : list === 'marcas' ? 'marcas' : 'resultados'} ${list === 'marcas' ? '.cartoes' : list === 'resultados' ? '[data-testimonial-track]' : '.grade'}`);
+      if (!parent) return;
+      state.orders[list] = [...parent.children].filter((node) => !(node as HTMLElement).hasAttribute('data-photo-clone')).map((node) => (node as HTMLElement).dataset.previewMediaKey || '').filter(Boolean);
+      saveState();
+      if (list === 'resultados') window.dispatchEvent(new Event('testimonial-order-updated'));
+      if (list === 'fotografias') window.dispatchEvent(new Event('photo-order-updated'));
+    };
+
+    const addMediaTools = (node: HTMLElement, key: string) => {
+      node.dataset.previewMediaKey = key;
+      node.dataset.previewMediaList = node.dataset.previewMediaList || getListKey(node);
+      if (node.hasAttribute('data-video-item')) {
+        if (state.niches[key] && state.niches[key] !== 'todos') node.dataset.nicho = state.niches[key];
+        if (!node.dataset.nicho || node.dataset.nicho === 'todos') node.dataset.nicho = 'outros';
+        const videoNicheKey = node.dataset.nicho;
+        node.dataset.nichoLabel = nicheDisplayName(videoNicheKey, nicheOptions().find(([value]) => value === videoNicheKey)?.[1] || node.dataset.nichoLabel || nicheLabels.get(videoNicheKey) || (videoNicheKey === 'outros' ? 'Outros' : ''));
+      }
+      if (state.deleted.includes(key)) { node.dataset.previewRemoved = 'true'; node.hidden = true; }
+      if (mobilePreviewToken) return;
+      node.draggable = true;
+      const tools = document.createElement('div');
+      tools.className = 'preview-media-tools';
+      tools.dataset.previewMediaTools = '';
+      const handle = document.createElement('span');
+      handle.className = 'preview-drag-handle';
+      handle.title = 'Arraste para mudar a ordem';
+      handle.textContent = '⠿';
+      handle.setAttribute('aria-hidden', 'true');
+      const image = node.querySelector<HTMLImageElement>('img');
+      const itemName = image?.alt || node.querySelector<HTMLElement>('figcaption strong')?.textContent?.trim() || node.getAttribute('title') || 'este item';
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'preview-media-remove';
+      remove.textContent = 'Remover';
+      remove.setAttribute('aria-label', `Remover ${itemName}`);
+      remove.addEventListener('click', async () => {
+        const uploadedLogoId = node.dataset.uploadedLogo;
+        const userUploadedLogo = node.matches('.logo-marca') && (
+          !!uploadedLogoId || state.media.some((media) => media.id === key && media.kind === 'logo')
+        );
+        if (userUploadedLogo) {
+          try {
+            if (uploadedLogoId) await deleteUploadedBrandLogo(uploadedLogoId);
+            else await deleteFile(key);
+            state.media = state.media.filter((media) => media.id !== key);
+            state.deleted = state.deleted.filter((deletedKey) => deletedKey !== key);
+            state.orders.marcas = (state.orders.marcas || []).filter((mediaKey) => mediaKey !== key);
+            saveState();
+            const selector = uploadedLogoId
+              ? `#marcas [data-uploaded-logo="${CSS.escape(uploadedLogoId)}"]`
+              : `#marcas [data-preview-media-key="${CSS.escape(key)}"]`;
+            document.querySelectorAll<HTMLElement>(selector).forEach((card) => card.remove());
+            window.dispatchEvent(new Event('brand-media-updated'));
+            if (status) status.textContent = 'Logo excluída deste navegador. Ela não voltará ao reabrir a prévia.';
+          } catch {
+            if (status) status.textContent = 'Não consegui excluir a logo deste navegador. Tente novamente.';
+          }
+          return;
+        }
+        if (!state.deleted.includes(key)) state.deleted.push(key);
+        node.dataset.previewRemoved = 'true';
+        node.hidden = true;
+        saveState();
+        if (node.matches('.print-card')) window.dispatchEvent(new Event('testimonial-order-updated'));
+        if (node.hasAttribute('data-video-item')) {
+          window.dispatchEvent(new Event('video-filters-refresh'));
+          refreshNicheSelects();
+        }
+        if (status) status.textContent = 'Item removido. Se precisar, restaure pelo botão “Restaurar itens removidos”.';
+      });
+      tools.append(handle, remove);
+      node.append(tools);
+
+      if (node.matches('.print-card')) {
+        const replaceButton = document.createElement('button');
+        replaceButton.type = 'button';
+        replaceButton.className = 'preview-print-replace';
+        replaceButton.textContent = 'Trocar print';
+        const replaceInput = document.createElement('input');
+        replaceInput.type = 'file';
+        replaceInput.accept = 'image/*';
+        replaceInput.hidden = true;
+        replaceInput.setAttribute('aria-label', 'Escolher outro print para este depoimento');
+        replaceButton.addEventListener('click', () => replaceInput.click());
+        replaceInput.addEventListener('change', async () => {
+          const file = replaceInput.files?.[0];
+          if (!file || !image) return;
+          try {
+            await putFile(key, file);
+            image.src = URL.createObjectURL(file);
+            image.removeAttribute('srcset');
+            image.alt = file.name.replace(/\.[^.]+$/, '') || 'Print de feedback recebido';
+            let record = state.media.find((media) => media.id === key);
+            if (!record) { record = { id: key, kind: 'testimonial', name: file.name, niche: '', list: 'resultados' }; state.media.push(record); }
+            else record.name = file.name;
+            saveState();
+            if (status) status.textContent = 'Print trocado e salvo neste navegador.';
+          } catch {
+            if (status) status.textContent = 'Não foi possível trocar este print neste navegador.';
+          }
+          replaceInput.value = '';
+        });
+        tools.append(replaceButton, replaceInput);
+      }
+      const fields = document.createElement('div');
+      fields.className = 'preview-media-fields';
+      fields.dataset.previewMediaTools = '';
+      const videoTitle = node.querySelector<HTMLElement>('figcaption strong');
+      const videoFormat = node.querySelector<HTMLElement>('figcaption span');
+      if (videoFormat) {
+        const currentFormat = state.itemTexts[`${key}:format`] ?? videoFormat.textContent?.trim() ?? '';
+        if (['Crie um nicho primeiro', 'Outros', 'Moda', 'Tecnologia', 'tech'].includes(currentFormat)) {
+          state.itemTexts[`${key}:format`] = node.dataset.nichoLabel || 'Outros';
+          videoFormat.textContent = node.dataset.nichoLabel || 'Outros';
+        }
+      }
+      const addField = (labelText: string, initialValue: string, suffix: string, apply: (value: string) => void, inputType: HTMLInputElement['type'] = 'text') => {
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        const input = document.createElement('input');
+        input.type = inputType;
+        input.value = state.itemTexts[`${key}:${suffix}`] ?? initialValue;
+        input.addEventListener('input', () => {
+          state.itemTexts[`${key}:${suffix}`] = input.value;
+          apply(input.value);
+          saveState();
+        });
+        apply(input.value);
+        label.append(input);
+        fields.append(label);
+      };
+      if (node.matches('.print-card')) {
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'preview-print-edit';
+        editButton.textContent = 'Editar';
+        editButton.setAttribute('aria-expanded', 'false');
+        editButton.setAttribute('aria-label', 'Editar informações deste depoimento');
+        editButton.addEventListener('click', () => {
+          const open = node.classList.toggle('preview-fields-open');
+          editButton.textContent = open ? 'Concluir' : 'Editar';
+          editButton.setAttribute('aria-expanded', String(open));
+        });
+        tools.prepend(editButton);
+        const metaSelector = ':scope > .print-meta';
+        const renderPrintMeta = async () => {
+          const brand = state.itemTexts[`${key}:brand`] ?? node.dataset.testimonialBrand ?? '';
+          const date = state.itemTexts[`${key}:date`] ?? node.dataset.testimonialDate ?? '';
+          const logoId = state.replacements[`testimonial-brand-logo:${key}`];
+          const logoFile = logoId ? await getFile(logoId).catch(() => undefined) : undefined;
+          let meta = node.querySelector<HTMLElement>(metaSelector);
+          const sourceLogo = meta?.querySelector<HTMLImageElement>('img')?.cloneNode(true) as HTMLImageElement | undefined;
+          if (!brand && !date && !logoFile && !sourceLogo) { meta?.remove(); return; }
+          if (!meta) { meta = document.createElement('figcaption'); meta.className = 'print-meta'; node.insertBefore(meta, tools); }
+          const scope = [...node.attributes].find((attribute) => attribute.name.startsWith('data-astro-cid-'))?.name;
+          if (scope) meta.setAttribute(scope, '');
+          meta.replaceChildren();
+          if (brand || logoFile) {
+            const identity = document.createElement('span'); identity.className = 'print-marca';
+            if (logoFile) { const logo = document.createElement('img'); logo.src = URL.createObjectURL(logoFile); logo.alt = brand ? `Logo da ${brand}` : 'Logo da marca'; identity.append(logo); }
+            else if (sourceLogo) identity.append(sourceLogo);
+            if (brand) { const name = document.createElement('strong'); name.textContent = brand; identity.append(name); }
+            if (scope) identity.setAttribute(scope, '');
+            identity.querySelectorAll<HTMLElement>('*').forEach((element) => { if (scope) element.setAttribute(scope, ''); });
+            meta.append(identity);
+          } else if (sourceLogo) {
+            const identity = document.createElement('span'); identity.className = 'print-marca'; identity.append(sourceLogo); if (scope) identity.setAttribute(scope, ''); meta.append(identity);
+          }
+          if (date) {
+            const dateElement = document.createElement('time'); dateElement.dateTime = date;
+            dateElement.textContent = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
+            if (scope) dateElement.setAttribute(scope, '');
+            meta.append(dateElement);
+          }
+        };
+        addField('Nome da marca (opcional)', node.dataset.testimonialBrand || '', 'brand', (value) => { node.dataset.testimonialBrand = value; void renderPrintMeta(); });
+        addField('Data do feedback (opcional)', node.dataset.testimonialDate || '', 'date', (value) => { node.dataset.testimonialDate = value; void renderPrintMeta(); }, 'date');
+        const logoLabel = document.createElement('label'); logoLabel.textContent = 'Logo da marca (opcional)';
+        const logoInput = document.createElement('input'); logoInput.type = 'file'; logoInput.accept = 'image/png,image/jpeg,image/webp,image/svg+xml';
+        logoInput.setAttribute('aria-label', 'Escolher logo da marca (opcional)');
+        logoInput.addEventListener('change', async () => {
+          const file = logoInput.files?.[0]; if (!file) return;
+          const logoKey = `testimonial-brand-logo:${key}`;
+          try { await putFile(logoKey, file); state.replacements[logoKey] = logoKey; saveState(); await renderPrintMeta(); if (status) status.textContent = 'Logo da marca salva neste navegador.'; }
+          catch { if (status) status.textContent = 'Não foi possível guardar a logo neste navegador.'; }
+          logoInput.value = '';
+        });
+        logoLabel.append(logoInput); fields.append(logoLabel);
+        const removeLogo = document.createElement('button'); removeLogo.type = 'button'; removeLogo.className = 'preview-print-remove-logo'; removeLogo.textContent = 'Remover logo da marca';
+        removeLogo.addEventListener('click', async () => { const logoKey = `testimonial-brand-logo:${key}`; delete state.replacements[logoKey]; await renderPrintMeta(); saveState(); if (status) status.textContent = 'Logo removida deste depoimento.'; });
+        fields.append(removeLogo);
+        const moveCard = (direction: -1 | 1) => {
+          const neighbor = direction < 0 ? node.previousElementSibling : node.nextElementSibling;
+          if (!neighbor || !(neighbor instanceof HTMLElement) || !neighbor.matches('figure.print-card')) return;
+          if (direction < 0) node.parentElement?.insertBefore(node, neighbor);
+          else node.parentElement?.insertBefore(neighbor, node);
+          persistOrder('resultados');
+        };
+        const moveEarlier = document.createElement('button'); moveEarlier.type = 'button'; moveEarlier.textContent = 'Mover antes'; moveEarlier.setAttribute('aria-label', 'Mover depoimento para antes');
+        moveEarlier.addEventListener('click', () => moveCard(-1));
+        const moveLater = document.createElement('button'); moveLater.type = 'button'; moveLater.textContent = 'Mover depois'; moveLater.setAttribute('aria-label', 'Mover depoimento para depois');
+        moveLater.addEventListener('click', () => moveCard(1));
+        fields.append(moveEarlier, moveLater);
+        const description = image?.alt || '';
+        addField('Descrição para acessibilidade', description, 'alt', (value) => { if (image) image.alt = value; });
+        void renderPrintMeta();
+      } else if (videoTitle) {
+        addField('Título', videoTitle.textContent || '', 'title', (value) => { videoTitle.textContent = value; });
+        if (videoFormat) addField('Formato', videoFormat.textContent || '', 'format', (value) => { videoFormat.textContent = value; });
+        const nicheLabel = document.createElement('label');
+        nicheLabel.textContent = 'Nicho';
+        const select = document.createElement('select');
+        document.querySelectorAll<HTMLElement>('[data-video-gallery] [data-filter]').forEach((button) => {
+          const option = document.createElement('option');
+          option.value = button.dataset.filter || '';
+          option.textContent = button.textContent?.trim() || 'Outros';
+          select.append(option);
+        });
+        fillNicheSelect(select, state.niches[key] ?? node.dataset.nicho ?? '');
+        select.addEventListener('change', () => {
+          const chosen = select.selectedOptions[0];
+          node.dataset.nicho = select.value || 'outros';
+          node.dataset.nichoLabel = chosen?.textContent?.trim() || 'Outros';
+          state.niches[key] = select.value;
+          if (chosen && videoFormat) videoFormat.textContent = chosen.textContent || videoFormat.textContent;
+          saveState();
+          window.dispatchEvent(new Event('video-filters-refresh'));
+          refreshNicheSelects();
+        });
+        nicheLabel.append(select);
+        fields.append(nicheLabel);
+      } else if (image) {
+        addField(node.closest('#marcas') ? 'Nome' : 'Descrição da foto', image.alt || node.getAttribute('title') || '', 'alt', (value) => {
+          image.alt = value;
+          node.title = value;
+          const textName = node.querySelector<HTMLElement>(':scope > span');
+          if (textName) textName.textContent = value;
+        });
+      }
+      node.append(fields);
+      node.addEventListener('dragstart', (event) => {
+        node.classList.add('preview-dragging');
+        event.dataTransfer?.setData('text/plain', key);
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+      });
+      node.addEventListener('dragend', () => { node.classList.remove('preview-dragging'); persistOrder(getListKey(node)); });
+      node.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        const dragging = document.querySelector<HTMLElement>('.preview-dragging');
+        if (!dragging || dragging === node || dragging.parentElement !== node.parentElement) return;
+        const rect = node.getBoundingClientRect();
+        const after = event.clientY > rect.top + rect.height / 2;
+        node.parentElement?.insertBefore(dragging, after ? node.nextSibling : node);
+      });
+      node.addEventListener('drop', (event) => { event.preventDefault(); persistOrder(getListKey(node)); });
+    };
+
+    items().forEach((node, index) => {
+      const key = node.dataset.previewMediaKey || (node.dataset.uploadedLogo ? `brand-upload-${node.dataset.uploadedLogo}` : `${getListKey(node)}-${index}`);
+      addMediaTools(node, key);
+    });
+    window.dispatchEvent(new Event('video-filters-refresh'));
+    refreshNicheSelects();
+
+    const makeDirectButton = (label: string, input: HTMLInputElement, extraClass = '') => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `editor-inline-add ${extraClass}`.trim();
+      button.textContent = label;
+      button.addEventListener('click', () => input.click());
+      return button;
+    };
+    const videoToolbar = document.createElement('div');
+    videoToolbar.className = 'video-editor-toolbar';
+    const videoInput = editor.querySelector<HTMLInputElement>('[data-editor-video]')!;
+    const photoInput = editor.querySelector<HTMLInputElement>('[data-editor-photo]')!;
+    const testimonialInput = editor.querySelector<HTMLInputElement>('[data-editor-testimonial]')!;
+    videoToolbar.append(makeDirectButton('Adicionar vídeo', videoInput));
+    const nicheLabel = document.createElement('label');
+    nicheLabel.className = 'video-niche-picker';
+    nicheLabel.append(document.createTextNode('Nicho do vídeo'));
+    nicheLabel.append(nicheSelect);
+    videoToolbar.append(nicheLabel);
+    const nicheForm = document.createElement('form');
+    nicheForm.className = 'video-niche-form';
+    const nicheInput = document.createElement('input');
+    nicheInput.type = 'text';
+    nicheInput.maxLength = 32;
+    nicheInput.placeholder = 'Novo nicho';
+    nicheInput.setAttribute('aria-label', 'Nome do novo nicho');
+    const createNiche = document.createElement('button');
+    createNiche.type = 'submit';
+    createNiche.textContent = 'Criar nicho';
+    nicheForm.append(nicheInput, createNiche);
+    nicheForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const label = nicheInput.value.trim();
+      const key = cleanKey(label);
+      if (!label || key === 'todos') return;
+      if (!state.customNiches.some((niche) => niche.key === key) && !nicheOptions().some(([value]) => value === key))
+        state.customNiches.push({ key, label });
+      refreshNicheSelects();
+      nicheSelect.value = key;
+      nicheInput.value = '';
+      saveState();
+      if (status) status.textContent = `Nicho “${label}” criado. Selecione-o e adicione o vídeo.`;
+    });
+    videoToolbar.append(nicheForm);
+    const moreButton = document.createElement('button');
+    moreButton.type = 'button';
+    moreButton.className = 'editor-inline-more';
+    moreButton.dataset.editorOpen = '';
+    moreButton.textContent = 'Mais opções';
+    moreButton.addEventListener('click', () => {
+      panel.hidden = false;
+      editor.classList.add('aberto');
+      document.body.classList.add('preview-editor-open');
+      refreshMovingGalleries();
+      setTextEditing(false);
+    });
+    videoToolbar.append(moreButton);
+    if (!mobilePreviewToken) document.querySelector('#videos .filtros')?.after(videoToolbar);
+    const addToSection = (selector: string, button: HTMLButtonElement) => {
+      const header = document.querySelector<HTMLElement>(selector);
+      if (!header) return;
+      let actions = header.querySelector<HTMLElement>('.editor-section-actions');
+      if (!actions) { actions = document.createElement('div'); actions.className = 'editor-section-actions'; header.append(actions); }
+      actions.append(button);
+    };
+    if (!mobilePreviewToken) {
+      addToSection('#fotografias .cabecalho', makeDirectButton('Adicionar foto', photoInput));
+      addToSection('#resultados .cabecalho', makeDirectButton('Adicionar print', testimonialInput));
+    }
+
+    window.addEventListener('brand-media-added', (event) => {
+      const node = (event as CustomEvent<HTMLElement>).detail;
+      if (!node || node.dataset.previewMediaKey) return;
+      addMediaTools(node, `brand-upload-${node.dataset.uploadedLogo || crypto.randomUUID()}`);
+      persistOrder('marcas');
+    });
+    Object.entries(state.orders).forEach(([list, keys]) => {
+      const parent = document.querySelector<HTMLElement>(`#${list === 'videos' ? 'videos' : list === 'fotografias' ? 'fotografias' : list === 'marcas' ? 'marcas' : 'resultados'} ${list === 'marcas' ? '.cartoes' : list === 'resultados' ? '[data-testimonial-track]' : '.grade'}`);
+      if (!parent) return;
+      keys.forEach((key) => { const node = parent.querySelector<HTMLElement>(`[data-preview-media-key="${CSS.escape(key)}"]`); if (node) parent.append(node); });
+    });
+    window.dispatchEvent(new Event('testimonial-order-updated'));
+
+    const createCard = (kind: 'video' | 'photo' | 'logo' | 'testimonial', file: File, id: string, url: string, niche: string) => {
+      const list = kind === 'video' ? 'videos' : kind === 'logo' ? 'marcas' : kind === 'testimonial' ? 'resultados' : 'fotografias';
+      const parent = document.querySelector<HTMLElement>(`#${list === 'videos' ? 'videos' : list === 'marcas' ? 'marcas' : list === 'resultados' ? 'resultados' : 'fotografias'} ${list === 'marcas' ? '.cartoes' : list === 'resultados' ? '[data-testimonial-prints]' : '.grade'}`);
+      if (!parent) return;
+      const node = document.createElement(kind === 'testimonial' ? 'figure' : 'li');
+      if (kind === 'video') {
+        node.dataset.videoItem = '';
+        node.dataset.nicho = niche || 'outros';
+        node.dataset.nichoLabel = nicheDisplayName(node.dataset.nicho, nicheOptions().find(([key]) => key === node.dataset.nicho)?.[1] || 'Outros');
+        const figure = document.createElement('figure'); figure.className = 'video';
+        const frame = document.createElement('div'); frame.className = 'moldura';
+        const video = document.createElement('video'); video.src = url; video.controls = true; video.playsInline = true; video.preload = 'metadata';
+        const loadPrompt = document.createElement('div');
+        loadPrompt.className = 'video-load-prompt';
+        loadPrompt.textContent = 'Toque em reproduzir para carregar';
+        const conversionOverlay = document.createElement('div');
+        conversionOverlay.className = 'video-conversion-overlay';
+        conversionOverlay.hidden = true;
+        frame.append(video, loadPrompt, conversionOverlay);
+        let conversionStarted = false;
+        let frameWatchdog: number | undefined;
+        let framePresented = false;
+        const convertIfNeeded = () => {
+          if (conversionStarted || node.hidden || state.deleted.includes(id) || node.dataset.videoConversionPending === 'true' || (video.videoWidth > 0 && !video.error)) return;
+          conversionStarted = true;
+          node.dataset.videoConversionPending = 'true';
+          loadPrompt.hidden = true;
+          video.controls = false;
+          conversionOverlay.hidden = false;
+          conversionOverlay.textContent = 'Preparando a imagem do vídeo…';
+          if (status) status.textContent = 'Adaptando este MP4/MOV para a prévia…';
+          void transcodeToCompatibleMp4(file, file.name, id).then(async (compatibleFile) => {
+            await putFile(`${id}:original`, file);
+            await putFile(id, compatibleFile);
+            node.remove();
+            const index = state.media.findIndex((media) => media.id === id);
+            if (index >= 0) state.media.splice(index, 1);
+            createCard('video', compatibleFile, id, URL.createObjectURL(compatibleFile), niche);
+            const convertedVideo = document.querySelector<HTMLVideoElement>(`#videos [data-preview-media-key="${CSS.escape(id)}"] video`);
+            if (convertedVideo) { convertedVideo.preload = 'auto'; convertedVideo.play().catch(() => {}); }
+            saveState();
+            if (status) status.textContent = 'Vídeo convertido para MP4 compatível e salvo neste navegador.';
+          }).catch((error) => {
+            console.error('Falha ao adaptar vídeo para a prévia:', error);
+            const detail = error instanceof Error ? error.message : String(error);
+            const message = `Não consegui preparar a imagem. ${detail}`;
+            conversionOverlay.textContent = message;
+            delete node.dataset.videoConversionPending;
+            if (status) status.textContent = message;
+          });
+        };
+        video.addEventListener('loadedmetadata', () => {
+          if (video.videoWidth > 0) loadPrompt.hidden = true;
+          else convertIfNeeded();
+        });
+        video.addEventListener('error', convertIfNeeded);
+        // Alguns arquivos reproduzem o áudio e informam as dimensões, mas o
+        // navegador não consegue decodificar os quadros. Detecte também esse caso.
+        video.addEventListener('play', () => {
+          framePresented = false;
+          if (frameWatchdog !== undefined) window.clearTimeout(frameWatchdog);
+          const qualityBefore = video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0;
+          if ('requestVideoFrameCallback' in video) {
+            video.requestVideoFrameCallback(() => { framePresented = true; });
+          }
+          frameWatchdog = window.setTimeout(() => {
+            if (video.paused || video.ended || video.currentTime < 0.5) return;
+            const qualityAfter = video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0;
+            if (!framePresented && qualityAfter <= qualityBefore) convertIfNeeded();
+          }, 2500);
+        });
+        video.addEventListener('pause', () => {
+          if (frameWatchdog !== undefined) window.clearTimeout(frameWatchdog);
+        });
+        video.addEventListener('click', () => {
+          if (video.error || (video.readyState >= 1 && !video.videoWidth)) convertIfNeeded();
+        });
+        video.addEventListener('play', () => { loadPrompt.hidden = true; });
+        const caption = document.createElement('figcaption');
+        const title = document.createElement('strong'); title.textContent = state.itemTexts[`${id}:title`] || file.name.replace(/\.[^.]+$/, '');
+        const subtitle = document.createElement('span'); subtitle.textContent = state.itemTexts[`${id}:format`] || nicheOptions().find(([key]) => key === (niche || 'outros'))?.[1] || 'Outros';
+        caption.append(title, subtitle); figure.append(frame, caption); node.append(figure);
+      } else if (kind === 'testimonial') {
+        node.className = 'print-card';
+        const frame = document.createElement('div'); frame.className = 'print-moldura';
+        const image = document.createElement('img'); image.className = 'print-imagem'; image.src = url; image.alt = file.name.replace(/\.[^.]+$/, '') || 'Print de feedback recebido'; image.loading = 'lazy';
+        frame.append(image); node.append(frame);
+      } else {
+        if (kind === 'photo') node.className = 'foto-item';
+        if (kind === 'logo') node.className = 'logo-marca';
+        const figure = document.createElement('figure');
+        const storedName = state.media.find((media) => media.id === id)?.name;
+        const displayName = file.name || storedName || 'Logo da marca';
+        const image = document.createElement('img'); image.alt = displayName.replace(/\.[^.]+$/, ''); image.loading = kind === 'photo' ? 'eager' : 'lazy';
+        if (kind === 'logo') image.addEventListener('load', () => node.classList.toggle('logo-horizontal', image.naturalWidth / image.naturalHeight >= 2.1), { once: true });
+        image.src = url;
+        figure.append(image); node.append(figure);
+        if (kind === 'logo') { node.title = image.alt; node.append(image); figure.remove(); }
+      }
+      node.dataset.previewMediaKey = id;
+      node.dataset.previewMediaList = list;
+      if (!state.media.some((media) => media.id === id)) state.media.push({ id, kind, name: file.name, niche, list });
+      addMediaTools(node, id);
+      parent.append(node);
+      persistOrder(list);
+      if (kind === 'logo') window.dispatchEvent(new Event('brand-media-updated'));
+      if (kind === 'testimonial') window.dispatchEvent(new Event('testimonial-media-updated'));
+      if (kind === 'video') document.querySelector<HTMLButtonElement>('[data-filter="todos"]')?.click();
+      if (kind === 'video') {
+        window.dispatchEvent(new Event('video-filters-refresh'));
+        refreshNicheSelects();
+      }
+      return true;
+    };
+
+    const hydrateMedia = async (includeDeleted = false) => {
+      const seenIds = new Set<string>();
+      const records = state.media.filter((media) => {
+        if (seenIds.has(media.id)) return false;
+        seenIds.add(media.id);
+        return includeDeleted || !state.deleted.includes(media.id);
+      });
+      if (mobilePreviewToken && new URLSearchParams(location.search).get('preparar-videos') === '1') {
+        try {
+          const videosToPrepare = records.filter((media) => media.kind === 'video');
+          if (videosToPrepare.length) {
+            const ffmpeg = await loadVideoConverter();
+            for (const [index, media] of videosToPrepare.entries()) {
+              const original = await getFile(`${media.id}:original`) || await getFile(media.id);
+              if (!original) throw new Error(`Não consegui abrir ${media.name}.`);
+              const extension = media.name.split('.').pop()?.toLowerCase() || 'mov';
+              const inputName = `preview-input-${media.id}.${extension}`;
+              const outputName = `preview-output-${media.id}.mp4`;
+              const posterName = `preview-poster-${media.id}.jpg`;
+              await ffmpeg.writeFile(inputName, new Uint8Array(await original.arrayBuffer()));
+              await ffmpeg.exec(['-i', inputName, '-map', '0:v:0', '-map', '0:a:0?', '-vf', "scale=w='min(1080,iw)':h=-2:flags=lanczos", '-c:v', 'libx264', '-preset', 'fast', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', outputName]);
+              const converted = await ffmpeg.readFile(outputName);
+              const bytes = converted instanceof Uint8Array ? new Uint8Array(converted) : new TextEncoder().encode(converted);
+              const video = new File([bytes], `${media.name.replace(/\.[^.]+$/, '')}.mp4`, { type: 'video/mp4' });
+              const videoResponse = await fetch(`/__preview_share/${encodeURIComponent(mobilePreviewToken)}/media/${encodeURIComponent(media.id)}`, { method: 'PUT', headers: { 'Content-Type': 'video/mp4' }, body: video });
+              if (!videoResponse.ok) throw new Error(`Não consegui preparar ${media.name} para o celular.`);
+              try {
+                await ffmpeg.exec(['-ss', '0.15', '-i', outputName, '-frames:v', '1', '-vf', 'scale=540:-2', '-q:v', '4', posterName]);
+                const posterData = await ffmpeg.readFile(posterName);
+                const posterBytes = posterData instanceof Uint8Array ? new Uint8Array(posterData) : new TextEncoder().encode(posterData);
+                const posterId = `${media.id}:poster`;
+                const posterResponse = await fetch(`/__preview_share/${encodeURIComponent(mobilePreviewToken)}/media/${encodeURIComponent(posterId)}`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: new Blob([posterBytes], { type: 'image/jpeg' }) });
+                if (posterResponse.ok) sharedMediaIds.add(posterId);
+              } catch { /* A capa é opcional quando o vídeo já está em MP4. */ }
+              await Promise.all([inputName, outputName, posterName].map((name) => ffmpeg.deleteFile(name).catch(() => undefined)));
+              console.info(`Vídeo ${index + 1} de ${videosToPrepare.length} preparado para celulares.`);
+            }
+          }
+          const cleanUrl = new URL(location.href);
+          cleanUrl.searchParams.delete('preparar-videos');
+          history.replaceState(null, '', cleanUrl);
+        } catch (error) {
+          console.error('Não consegui preparar os vídeos desta prévia:', error);
+        }
+      }
+      const remoteVideos = mobilePreviewToken ? records.filter((media) => media.kind === 'video') : [];
+      for (const media of remoteVideos) {
+        const parent = document.querySelector<HTMLUListElement>('#videos .grade');
+        if (!parent || parent.querySelector(`[data-preview-media-key="${CSS.escape(media.id)}"]`)) continue;
+        const node = document.createElement('li');
+        node.dataset.videoItem = '';
+        node.dataset.nicho = state.niches[media.id] || media.niche || 'outros';
+        node.dataset.nichoLabel = nicheDisplayName(node.dataset.nicho, nicheOptions().find(([key]) => key === node.dataset.nicho)?.[1] || 'Outros');
+        const figure = document.createElement('figure'); figure.className = 'video';
+        const frame = document.createElement('div'); frame.className = 'moldura';
+        const video = document.createElement('video'); video.dataset.src = `/__preview_share/${encodeURIComponent(mobilePreviewToken)}/media/${encodeURIComponent(media.id)}`; if (sharedMediaIds.has(`${media.id}:poster`)) video.poster = `/__preview_share/${encodeURIComponent(mobilePreviewToken)}/media/${encodeURIComponent(`${media.id}:poster`)}`; video.playsInline = true; video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', ''); video.preload = 'none'; video.setAttribute('aria-label', `Vídeo: ${media.name}`);
+        const useNativeMobileControls = matchMedia('(pointer: coarse)').matches;
+        if (useNativeMobileControls) {
+          video.src = video.dataset.src;
+          video.preload = 'metadata';
+        }
+        const playButton = document.createElement('button'); playButton.className = 'tocar'; playButton.type = 'button'; playButton.dataset.previewMobilePlay = ''; playButton.setAttribute('aria-label', `Tocar vídeo: ${state.itemTexts[`${media.id}:title`] || media.name}`);
+        const circle = document.createElement('span'); circle.className = 'circulo'; circle.setAttribute('aria-hidden', 'true'); circle.textContent = '▶';
+        playButton.addEventListener('click', () => {
+          if (!video.src) { video.src = video.dataset.src || ''; video.load(); }
+          video.controls = false;
+          video.muted = false;
+          video.loop = false;
+          if (useNativeMobileControls) {
+            const iosVideo = video as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+            if (iosVideo.webkitEnterFullscreen) iosVideo.webkitEnterFullscreen();
+            else if (video.requestFullscreen) void video.requestFullscreen().catch(() => {});
+          }
+          video.play().catch(() => { playButton.hidden = false; });
+        });
+        video.addEventListener('play', () => { figure.classList.add('video-playing'); playButton.hidden = true; });
+        video.addEventListener('pause', () => { figure.classList.remove('video-playing'); if (!video.ended) playButton.hidden = false; });
+        video.addEventListener('ended', () => { figure.classList.remove('video-playing'); playButton.hidden = false; });
+        if (useNativeMobileControls) video.addEventListener('click', () => { if (!video.paused) video.pause(); });
+        playButton.append(circle); frame.append(video, playButton);
+        const caption = document.createElement('figcaption');
+        const title = document.createElement('strong'); title.textContent = state.itemTexts[`${media.id}:title`] || media.name.replace(/\.[^.]+$/, '');
+        const subtitle = document.createElement('span'); subtitle.textContent = state.itemTexts[`${media.id}:format`] || node.dataset.nichoLabel;
+        caption.append(title, subtitle); figure.append(frame, caption); node.append(figure);
+        const scopeName = [...(parent.querySelector<HTMLElement>('.video')?.getAttributeNames() || [])].find((name) => name.startsWith('data-astro-cid-'));
+        if (scopeName) [node, figure, frame, video, playButton, circle, caption, title, subtitle].forEach((element) => element.setAttribute(scopeName, ''));
+        node.dataset.previewMediaKey = media.id; node.dataset.previewMediaList = 'videos';
+        addMediaTools(node, media.id); parent.append(node);
+      }
+      if (remoteVideos.length) window.dispatchEvent(new Event('video-filters-refresh'));
+      const files = await Promise.all(records.filter((media) => !remoteVideos.includes(media)).map(async (media) => {
+        const existing = document.querySelector<HTMLElement>(`[data-preview-media-key="${CSS.escape(media.id)}"]`);
+        if (existing && media.kind !== 'testimonial') return { media, existing, file: undefined };
+        let file: Blob | undefined;
+        if (mobilePreviewToken && media.kind === 'photo' && sharedMediaIds.has(media.id)) {
+          file = await fetch(`/__preview_share/${encodeURIComponent(mobilePreviewToken)}/media/${encodeURIComponent(media.id)}`, { cache: 'force-cache' })
+            .then((response) => response.ok ? response.blob() : undefined).catch(() => undefined);
+        }
+        if (!file) file = media.kind === 'photo'
+          ? (await getFile(`${media.id}:carousel`).catch(() => undefined)) || await getFile(media.id).catch(() => undefined)
+          : await getFile(media.id).catch(() => undefined);
+        if (file && !(file instanceof File)) file = new File([file], media.name || 'arquivo-do-portfolio', { type: file.type || 'application/octet-stream' });
+        return { media, existing, file };
+      }));
+      for (const { media, existing, file: storedFile } of files) {
+        let file = storedFile;
+        if (existing) {
+          if (media.kind === 'testimonial' && file) {
+            const image = existing.querySelector<HTMLImageElement>('.print-imagem');
+            if (image) { image.src = URL.createObjectURL(file); image.removeAttribute('srcset'); image.alt = media.name.replace(/\.[^.]+$/, '') || image.alt; }
+          }
+          continue;
+        }
+        if (file && media.kind === 'logo') {
+          const cropped = await trimLogoWhitespace(file);
+          const fileName = media.name.replace(/\.[^.]+$/, '') + '.png';
+          file = new File([cropped], fileName, { type: 'image/png' });
+          await putFile(media.id, file);
+        }
+        if (file && media.kind === 'photo') file = await getPhotoDisplayFile(media.id, file as File);
+        if (file && media.kind === 'video' && file.type !== 'video/mp4') {
+          // Se já existe uma versão MP4 pronta no armazenamento, use-a. Não volte
+          // ao original MOV em cada abertura da prévia, pois isso reprocessa o vídeo
+          // e deixa o card temporariamente sem imagem.
+          const original = await getFile(`${media.id}:original`);
+          const source = original || file;
+          if (source.type !== 'video/mp4') {
+            try {
+              if (status) status.textContent = `Preparando “${media.name}” para mostrar a imagem…`;
+              if (!original) { try { await putFile(`${media.id}:original`, source); } catch { /* Keep the source available in this session. */ } }
+              file = await transcodeToCompatibleMp4(source, media.name, media.id);
+              await putFile(media.id, file);
+            } catch (error) {
+              console.error('Não consegui adaptar o vídeo salvo:', error);
+              file = source;
+              const detail = error instanceof Error ? error.message : String(error);
+              if (status) status.textContent = `Não consegui preparar a imagem de “${media.name}”. ${detail}`;
+            }
+          }
+        }
+        if (file) createCard(media.kind, file as File, media.id, URL.createObjectURL(file), media.niche);
+      }
+    };
+    void hydrateMedia();
+
+    const handleUpload = (input: HTMLInputElement, kind: 'video' | 'photo' | 'logo' | 'testimonial') => {
+      input.addEventListener('change', async () => {
+        let added = 0;
+        let failed = 0;
+        let uploadError = '';
+        const selectedFiles = [...(input.files || [])];
+        if (status && kind === 'video' && selectedFiles.length)
+          status.textContent = selectedFiles.length === 1 ? `Incluindo “${selectedFiles[0].name}”…` : `Incluindo ${selectedFiles.length} vídeos…`;
+        for (const file of selectedFiles) {
+          const id = crypto.randomUUID();
+          try {
+            if (kind === 'logo') {
+              const bitmap = await createImageBitmap(file);
+              const readable = bitmap.width > 0 && bitmap.height > 0;
+              bitmap.close();
+              if (!readable) throw new Error('Imagem sem conteúdo legível');
+            }
+            const croppedLogo = kind === 'logo' ? await trimLogoWhitespace(file) : undefined;
+            const videoTypeByExtension: Record<string, string> = {
+              mp4: 'video/mp4', m4v: 'video/x-m4v', mov: 'video/quicktime',
+              '3gp': 'video/3gpp', '3g2': 'video/3gpp2', webm: 'video/webm',
+              avi: 'video/x-msvideo', mkv: 'video/x-matroska',
+            };
+            const extension = file.name.split('.').pop()?.toLowerCase() || '';
+            const videoType = videoTypeByExtension[extension];
+            const storedFile = croppedLogo
+              ? new File([croppedLogo], file.name.replace(/\.[^.]+$/, '') + '.png', { type: 'image/png' })
+              : kind === 'photo'
+                ? await optimizePhotoForCarousel(file)
+                : kind === 'video' && videoType && (!file.type || file.type === 'application/octet-stream')
+                  ? new File([file], file.name, { type: videoType, lastModified: file.lastModified })
+                  : file;
+            let fileForCard = storedFile;
+            if (kind === 'video') {
+              // Salva o original e verifica se o navegador consegue mostrar a imagem.
+              // Formatos incompatíveis são convertidos automaticamente no evento loadedmetadata.
+              await putFile(id, storedFile);
+              if (!createCard(kind, storedFile, id, URL.createObjectURL(storedFile), nicheSelect.value || 'outros')) throw new Error('Área de vídeos indisponível');
+              added += 1;
+              if (status) status.textContent = `Vídeo salvo. Verificando a imagem de “${file.name}”…`;
+              continue;
+            }
+            const objectUrl = URL.createObjectURL(fileForCard);
+            await putFile(id, storedFile);
+            if (!createCard(kind, file, id, objectUrl, nicheSelect.value || 'outros')) throw new Error('Área de inclusão indisponível');
+            added += 1;
+          } catch (error) {
+            uploadError = error instanceof Error ? error.message : 'Falha ao preparar o arquivo.';
+            failed += 1;
+          }
+        }
+        saveState();
+        input.value = '';
+        if (status) {
+          if (failed && kind === 'logo') status.textContent = added
+            ? `${added} logo(s) adicionada(s). ${failed} não abriu; tente PNG, JPG ou WEBP.`
+            : 'Não consegui abrir essa logo. Tente enviar em PNG, JPG ou WEBP.';
+          else if (failed) status.textContent = added
+            ? `${added} arquivo(s) adicionado(s); ${failed} não foi(ram) aceito(s). ${uploadError}`
+            : `Não consegui preparar o vídeo. ${uploadError}`;
+          else if (added && kind === 'video') status.textContent = added === 1
+            ? 'Vídeo salvo. Preparando a imagem…'
+            : `${added} vídeos salvos. Preparando as imagens…`;
+          else if (added) status.textContent = added === 1 ? 'Arquivo adicionado e salvo neste navegador.' : `${added} arquivos adicionados e salvos neste navegador.`;
+        }
+      });
+    };
+    handleUpload(editor.querySelector<HTMLInputElement>('[data-editor-video]')!, 'video');
+    handleUpload(editor.querySelector<HTMLInputElement>('[data-editor-photo]')!, 'photo');
+    handleUpload(editor.querySelector<HTMLInputElement>('[data-editor-logo]')!, 'logo');
+    handleUpload(editor.querySelector<HTMLInputElement>('[data-editor-testimonial]')!, 'testimonial');
+
+    editor.querySelector('[data-editor-restore]')?.addEventListener('click', async () => {
+      state.deleted = [];
+      await hydrateMedia(true);
+      document.querySelectorAll<HTMLElement>('[data-preview-media-key]').forEach((node) => { delete node.dataset.previewRemoved; node.hidden = false; });
+      document.querySelector<HTMLButtonElement>('[data-video-gallery] [data-filter].ativo')?.click();
+      window.dispatchEvent(new Event('video-filters-refresh'));
+      window.dispatchEvent(new Event('testimonial-order-updated'));
+      refreshNicheSelects();
+      saveState();
+      if (status) status.textContent = 'Itens removidos restaurados.';
+    });
+  }
+</script>
+
+<style is:global>
+  #videos [data-video-item] .video { display: grid; gap: .8rem; padding: .55rem; border: 1px solid var(--linha); border-radius: max(var(--raio), 10px); background: var(--superficie); color: var(--texto); }
+  #videos [data-video-item] .moldura { position: relative; aspect-ratio: 9 / 16; overflow: hidden; border-radius: max(var(--raio), 7px); background: var(--fundo); color: #fff; }
+  #videos [data-video-item] .moldura video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  #videos [data-video-item] .video::after { display: none; }
+  #videos .video-conversion-overlay { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 1rem; background: rgb(48 44 41 / .78); color: #fff; text-align: center; font-size: .88rem; line-height: 1.5; }
+  #videos .video-conversion-overlay[hidden] { display: none; }
+  #videos [data-video-item] figcaption { min-height: 3.2rem; display: grid; align-content: center; gap: .15rem; line-height: 1.25; padding: .15rem .35rem .25rem; }
+  #videos [data-video-item] figcaption strong { overflow: hidden; font-size: .9rem; }
+  #videos [data-video-item] figcaption span { color: var(--suave); font-size: .78rem; }
+  #fotografias .foto-item { flex: 0 0 clamp(12rem, 21vw, 16rem); min-width: 0; scroll-snap-align: start; }
+  #fotografias .foto-item figure { margin: 0; padding: .4rem; border: 1px solid var(--linha); border-radius: .75rem; background: var(--superficie); }
+  #fotografias .foto-item img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: contain; background: var(--superficie); border-radius: .45rem; }
+  @media (max-width: 759px) { #fotografias .foto-item { flex-basis: calc((100vw - 2.65rem) / 2.2); } }
+  .preview-editor { position: fixed; z-index: 100; left: max(1rem, env(safe-area-inset-left)); bottom: max(1rem, env(safe-area-inset-bottom)); font-family: var(--f-corpo); color: var(--texto); }
+  .editor-file-inputs { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .editor-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .editor-launcher,.editor-panel button,.editor-uploads label { border: 1px solid var(--linha); border-radius: 999px; background: #fff; color: var(--texto); font: 600 .84rem var(--f-corpo); cursor: pointer; }
+  .editor-launcher { padding: .8rem 1.15rem; border-color: var(--marrom-profundo); background: var(--marrom-profundo); color: #fff; box-shadow: 0 5px 18px rgb(48 44 41 / .15); }
+  .editor-panel { position: fixed; z-index: 101; left: max(1rem, env(safe-area-inset-left)); bottom: 5rem; display: grid; gap: .85rem; width: min(24rem, calc(100vw - 2rem)); max-height: min(78vh, 42rem); overflow: auto; padding: 1rem; border: 1px solid var(--linha); border-radius: 1rem; background: rgb(255 255 255 / .98); box-shadow: 0 12px 40px rgb(48 44 41 / .2); }
+  .editor-panel[hidden] { display: none; }
+  .editor-panel-header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: move; touch-action: none; user-select: none; }
+  .editor-panel-header div { display: grid; gap: .2rem; }
+  .editor-panel-header strong { font-family: var(--f-titulo); font-size: 1.25rem; font-weight: var(--peso-titulo); }
+  .editor-panel-header span,.editor-status { color: var(--suave); font-size: .76rem; line-height: 1.4; }
+  .editor-panel-header button { width: 2rem; height: 2rem; padding: 0; font-size: 1.35rem; }
+  .editor-actions,.editor-uploads { display: flex; flex-wrap: wrap; gap: .45rem; }
+  .editor-actions button,.editor-uploads label { padding: .55rem .8rem; font-size: .75rem; }
+  .editor-actions button:hover,.editor-uploads label:hover { border-color: var(--destaque); }
+  .editor-text-fields { display: grid; gap: .6rem; max-height: min(38vh, 20rem); overflow: auto; padding: .1rem .15rem .25rem 0; }
+  .editor-text-fields[hidden] { display: none; }
+  .editor-text-fields label { display: grid; gap: .25rem; color: var(--suave); font-size: .72rem; }
+  .editor-text-fields textarea { box-sizing: border-box; width: 100%; min-height: 3.2rem; padding: .55rem .65rem; border: 1px solid var(--linha); border-radius: .55rem; background: #fff; color: var(--texto); font: .82rem/1.4 var(--f-corpo); resize: vertical; }
+  .editor-text-fields textarea:focus { border-color: var(--marrom-profundo); outline: 2px solid rgb(75 53 43 / .16); }
+  .video-editor-toolbar { display: none; flex-wrap: wrap; align-items: end; gap: .65rem; margin: -0.75rem 0 1.5rem; padding: .85rem; border: 1px solid var(--linha); border-radius: .9rem; background: var(--superficie); }
+  body.preview-editor-open .video-editor-toolbar { display: flex; }
+  .editor-inline-add,.editor-inline-more,.video-niche-form button { min-height: 2.65rem; padding: .55rem .9rem; border: 1px solid var(--marrom-profundo); border-radius: 999px; background: var(--marrom-profundo); color: #fff; font: 600 .82rem var(--f-corpo); cursor: pointer; }
+  .editor-inline-add:hover,.editor-inline-more:hover,.video-niche-form button:hover { filter: brightness(1.12); }
+  .video-niche-picker,.video-niche-form { display: grid; gap: .3rem; color: var(--suave); font-size: .72rem; }
+  .video-niche-picker select,.video-niche-form input { min-width: 8.5rem; min-height: 2.65rem; padding: .45rem .7rem; border: 1px solid var(--linha); border-radius: .55rem; background: #fff; color: var(--texto); font: .82rem var(--f-corpo); }
+  .video-niche-form { grid-template-columns: minmax(7rem, 1fr) auto; align-items: end; }
+  .video-niche-form input { grid-column: 1; }
+  .video-niche-form button { grid-column: 2; grid-row: 1 / span 2; }
+  .editor-inline-more { border-color: var(--linha); background: transparent; color: var(--texto); }
+  .editor-section-actions { display: none; flex-wrap: wrap; gap: .6rem; margin-top: .5rem; }
+  body.preview-editor-open .editor-section-actions { display: flex; }
+  .editor-uploads input { display: none; }
+  .editor-uploads .niche-label { display: grid; gap: .3rem; border: 0; border-radius: 0; padding: .25rem 0; color: var(--suave); font-size: .76rem; }
+  .editor-uploads select { min-height: 2.2rem; padding: .3rem .6rem; border: 1px solid var(--linha); border-radius: .5rem; background: #fff; color: var(--texto); font: inherit; }
+  .editor-status { margin: 0; }
+  .editor-status a { display: block; margin: .35rem 0; color: var(--marrom-profundo); font-weight: 600; overflow-wrap: anywhere; }
+  .editor-status button { min-height: 2.2rem; padding: .45rem .8rem; border-color: var(--marrom-profundo); background: var(--marrom-profundo); color: #fff; }
+  .editor-help { margin: -.25rem 0 0; color: var(--suave); font-size: .76rem; line-height: 1.4; }
+  .campaign-editor { display: grid; gap: .65rem; padding: .85rem; border: 1px solid var(--linha); border-radius: .8rem; background: var(--fundo-suave); }
+  .campaign-editor h3,.campaign-editor h4 { margin: 0; font-family: var(--f-titulo); font-weight: var(--peso-titulo); }
+  .campaign-editor h3 { font-size: 1.15rem; }
+  .campaign-editor h4 { margin-top: .25rem; font-size: .95rem; }
+  .campaign-editor > p { margin: -.4rem 0 .15rem; color: var(--suave); font-size: .72rem; line-height: 1.4; }
+  .campaign-editor label { display: grid; gap: .25rem; color: var(--suave); font-size: .7rem; }
+  .campaign-editor input,.campaign-editor textarea { box-sizing: border-box; width: 100%; min-height: 2.35rem; padding: .5rem .6rem; border: 1px solid var(--linha); border-radius: .5rem; background: #fff; color: var(--texto); font: .78rem/1.35 var(--f-corpo); }
+  .campaign-editor textarea { resize: vertical; }
+  .campaign-editor input:focus,.campaign-editor textarea:focus { border-color: var(--marrom-profundo); outline: 2px solid rgb(75 53 43 / .14); }
+  .campaign-editor .campaign-toggle { display: flex; align-items: center; gap: .5rem; color: var(--texto); }
+  .campaign-editor .campaign-toggle input { width: 1rem; min-height: auto; height: 1rem; margin: 0; accent-color: var(--marrom-profundo); }
+  .campaign-dates { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+  .campaign-package { display: grid; gap: .45rem; margin: 0; padding: .6rem; border: 1px solid var(--linha); border-radius: .55rem; }
+  .campaign-package legend { padding-inline: .25rem; color: var(--texto); font-size: .7rem; font-weight: 600; }
+  .campaign-editor > button { width: 100%; padding: .7rem .9rem; border-color: var(--marrom-profundo); background: var(--marrom-profundo); color: #fff; }
+  .campaign-editor > a { color: var(--marrom-profundo); font-size: .75rem; text-align: center; text-underline-offset: .15em; }
+  .preview-text-editing [data-preview-text] { outline: 1px dashed var(--destaque); outline-offset: 3px; cursor: text; }
+  [data-preview-media-key][hidden] { display: none !important; }
+  .preview-media-tools { display: none; position: relative; z-index: 3; align-items: center; justify-content: center; gap: .35rem; margin: .35rem auto 0; }
+  body.preview-editor-open .preview-media-tools { display: flex; }
+  body.preview-editor-open [data-preview-media-key] { position: relative; }
+  .preview-media-tools button { width: 1.9rem; height: 1.9rem; padding: 0; border: 1px solid rgb(255 255 255 / .7); border-radius: 50%; background: var(--marrom-profundo); color: #fff; font: 600 1.15rem/1 var(--f-corpo); cursor: pointer; box-shadow: 0 2px 6px rgb(0 0 0 / .18); }
+  .preview-media-tools .preview-media-remove { width: auto; min-width: 4rem; padding-inline: .65rem; border-radius: 999px; font: 600 .72rem/1 var(--f-corpo); white-space: nowrap; }
+  .preview-drag-handle { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 1px solid rgb(255 255 255 / .7); border-radius: 50%; background: var(--marrom-profundo); color: #fff; font-size: 1rem; cursor: grab; box-shadow: 0 2px 6px rgb(0 0 0 / .18); }
+  .preview-media-fields { display: none; gap: .35rem; padding: .55rem; border: 1px solid var(--linha); border-radius: .5rem; background: #fff; font-size: .7rem; }
+  body.preview-editor-open .preview-media-fields { display: grid; }
+  .preview-media-fields label { display: grid; gap: .2rem; }
+  .preview-media-fields input,.preview-media-fields select { min-width: 0; width: 100%; padding: .3rem .45rem; border: 1px solid var(--linha); border-radius: .35rem; background: #fff; color: var(--texto); font: .75rem var(--f-corpo); }
+  body.preview-editor-open .logo-marca { overflow: visible; margin-bottom: 2.4rem; }
+  body.preview-editor-open .logo-marca .preview-media-tools { position: absolute; top: calc(100% + .15rem); left: 50%; width: max-content; margin: 0; transform: translateX(-50%); }
+  body.preview-editor-open #marcas .faixa-marcas { overflow: visible; }
+  body.preview-editor-open #marcas .cartoes { width: 100%; flex-wrap: wrap; animation: none !important; }
+  body.preview-editor-open #marcas .logo-marca { margin-bottom: 6rem; }
+  body.preview-editor-open #marcas .logo-marca .preview-media-fields { position: absolute; top: calc(100% + 2.25rem); left: 50%; z-index: 5; width: 9rem; transform: translateX(-50%); }
+  body.preview-editor-open [data-preview-media-key] { cursor: grab; }
+  body.preview-editor-open .preview-dragging { opacity: .45; }
+  @media (max-width: 600px) {
+    .editor-panel { max-height: 72vh; }
+    .video-editor-toolbar { align-items: stretch; }
+    .video-editor-toolbar > * { flex: 1 1 100%; }
+    .video-niche-picker select { width: 100%; }
+    .editor-inline-add,.editor-inline-more { width: 100%; }
+    .editor-section-actions { width: 100%; }
+    .editor-section-actions .editor-inline-add { width: 100%; }
+  }
+</style>

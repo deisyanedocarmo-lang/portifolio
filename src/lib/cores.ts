@@ -25,7 +25,8 @@ export type Paleta = ReturnType<typeof montarPaleta>['paleta'];
 
 /** Completa a paleta a partir das 3 cores base e lista os problemas de contraste (mínimo AA). */
 export function montarPaleta(base: { fundo: string; texto: string; destaque: string }) {
-  const superficie = misturar(base.texto, base.fundo, 0.06);
+  // Os cartões acompanham o branco do tema; a alternância das seções usa o off-white.
+  const superficie = base.fundo;
   // Texto secundário: o mais suave possível que ainda passe em 4,5:1 no fundo e nos cartões.
   let suave = base.texto;
   for (let peso = 0.6; peso <= 1; peso += 0.05) {
@@ -53,7 +54,7 @@ export function montarPaleta(base: { fundo: string; texto: string; destaque: str
   conferir('destaque', contraste(noDestaque, base.destaque), 4.5, 'o texto dos botões sobre a cor de destaque', 'Use um destaque bem mais escuro ou bem mais claro, não um tom médio.');
 
   return {
-    paleta: { ...base, superficie, suave, linha: misturar(base.texto, base.fundo, 0.22), noDestaque },
+    paleta: { ...base, superficie, suave, linha: misturar(base.texto, base.fundo, 0.12), noDestaque },
     problemas,
   };
 }

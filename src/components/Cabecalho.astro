@@ -1,16 +1,17 @@
 ---
 // Cabeçalho das seções: um rótulo pequeno em cima e o título.
 interface Props {
-  rotulo: string;
+  rotulo?: string;
   titulo: string;
   id: string;
+  previewTextKey?: string;
 }
-const { rotulo, titulo, id } = Astro.props;
+const { rotulo, titulo, id, previewTextKey } = Astro.props;
 ---
 
 <header class="cabecalho">
-  <p class="kicker">{rotulo}</p>
-  <h2 id={id}>{titulo}</h2>
+  {rotulo && <p class="kicker">{rotulo}</p>}
+  <h2 id={id} data-preview-text-key={previewTextKey || `heading-${id}`}>{titulo}</h2>
 </header>
 
 <style>
@@ -25,10 +26,5 @@ const { rotulo, titulo, id } = Astro.props;
   h2 {
     font-size: calc(clamp(1.9rem, 5vw, 3rem) * var(--escala));
     line-height: 1.05;
-  }
-  @media (max-width: 759px) {
-    .cabecalho {
-      text-align: center;
-    }
   }
 </style>

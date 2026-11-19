@@ -1,164 +1,146 @@
 ---
-// Vídeos verticais. Com 2 nichos ou mais, aparecem separados por nicho (todos abertos, um
-// bloco embaixo do outro), com atalhos no alto que acompanham a rolagem.
+// Grade única de vídeos com filtros por nicho; todos aparecem inicialmente.
 import Cabecalho from './Cabecalho.astro';
 import VideoCard from './VideoCard.astro';
-import { c, videosDaGrade, chaveDoNicho, type Video } from '../lib/site';
+import { c, videosDaGrade, chaveDoNicho } from '../lib/site';
 
 const v = c.videos!;
-
-// Agrupa na ordem em que os nichos aparecem na lista; vídeos sem nicho vão para o fim.
-const grupos = new Map<string, { nome: string; chave: string; videos: Video[] }>();
-for (const video of videosDaGrade) {
-  const chave = video.nicho ? chaveDoNicho(video.nicho) : 'outros';
-  if (!grupos.has(chave)) grupos.set(chave, { nome: video.nicho || 'Outros vídeos', chave, videos: [] });
-  grupos.get(chave)!.videos.push(video);
-}
-const lista = [...grupos.values()].sort((a, b) => Number(a.chave === 'outros') - Number(b.chave === 'outros'));
-const porNicho = lista.length >= 2;
-const quantos = (n: number) => `${n} ${n === 1 ? 'vídeo' : 'vídeos'}`;
+const nichos = [...new Map(
+  videosDaGrade
+    .filter((video) => video.nicho)
+    .map((video) => [chaveDoNicho(video.nicho!), video.nicho!]),
+).entries()];
 ---
 
-<section class="secao recuo" id="videos" aria-labelledby="videos-titulo">
-  <Cabecalho rotulo="Portfólio" titulo={v.titulo} id="videos-titulo" />
-  {v.texto && <p class="texto">{v.texto}</p>}
-  {
-    porNicho && (
-      <nav class="atalhos" aria-label="Ir para um nicho">
-        <ul>
-          {lista.map((g) => (
-            <li>
-              <a href={`#nicho-${g.chave}`}>
-                {g.nome} <span>{g.videos.length}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    )
-  }
-  {
-    lista.map((g) => (
-      <div class="grupo" id={porNicho ? `nicho-${g.chave}` : undefined}>
-        {porNicho && (
-          <h3>
-            {g.nome} <span>{quantos(g.videos.length)}</span>
-          </h3>
-        )}
-        <ul class="grade">
-          {g.videos.map((video) => (
-            <li>
-              <VideoCard video={video} />
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))
-  }
+<section class="secao recuo" id="videos" aria-labelledby="videos-titulo" data-video-gallery>
+  <Cabecalho rotulo="Portfólio" titulo={v.titulo} id="videos-titulo" previewTextKey="section-videos-title" />
+  {v.texto && <p class="texto" data-preview-text-key="section-videos-intro">{v.texto}</p>}
+  <nav class="filtros" aria-label="Filtrar vídeos por nicho">
+    <button class="filtro ativo" type="button" data-filter="todos" aria-pressed="true">Todos</button>
+    {nichos.map(([chave, nome]) => (
+      <button class="filtro" type="button" data-filter={chave} aria-pressed="false">{nome}</button>
+    ))}
+  </nav>
+  <ul class="grade">
+    {videosDaGrade.map((video) => (
+      <li data-video-item data-nicho={video.nicho ? chaveDoNicho(video.nicho) : 'outros'}>
+        <VideoCard video={video} />
+      </li>
+    ))}
+  </ul>
 </section>
 
-<style>
-  .texto {
+<script>
+  document.querySelectorAll<HTMLElement>('[data-video-gallery]').forEach((gallery) => {
+    const nav = gallery.querySelector<HTMLElement>('.filtros');
+    const cards = () => [...gallery.querySelectorAll<HTMLElement>('[data-video-item]')];
+    const applyFilter = (selected: string) => {
+      const filters = [...gallery.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+      filters.forEach((button) => {
+        const active = button.dataset.filter === selected;
+        button.classList.toggle('ativo', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      cards().forEach((card) => {
+        card.hidden = card.dataset.previewRemoved === 'true' || (selected !== 'todos' && card.dataset.nicho !== selected);
+      });
+    };
+    const bindFilter = (filter: HTMLButtonElement) => {
+      if (filter.dataset.filterBound) return;
+      filter.dataset.filterBound = 'true';
+      filter.addEventListener('click', () => applyFilter(filter.dataset.filter || 'todos'));
+    };
+    const refreshFilters = () => {
+      if (!nav) return;
+      const activeFilter = nav.querySelector<HTMLButtonElement>('.filtro.ativo')?.dataset.filter || 'todos';
+      const labels = new Map([...nav.querySelectorAll<HTMLButtonElement>('[data-filter]')].map((button) => [button.dataset.filter || '', button.textContent?.trim() || '']));
+      const used = new Set(cards()
+        .filter((card) => card.dataset.previewRemoved !== 'true')
+        .map((card) => card.dataset.nicho || 'outros')
+        .filter((key) => key !== 'todos'));
+      nav.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach((button) => {
+        const key = button.dataset.filter || '';
+        if (key !== 'todos' && !used.has(key)) button.remove();
+      });
+      const existing = new Set([...nav.querySelectorAll<HTMLButtonElement>('[data-filter]')].map((button) => button.dataset.filter));
+      [...used].sort((left, right) => {
+        const leftLabel = cards().find((card) => card.dataset.nicho === left)?.dataset.nichoLabel || left.replace(/-/g, ' ');
+        const rightLabel = cards().find((card) => card.dataset.nicho === right)?.dataset.nichoLabel || right.replace(/-/g, ' ');
+        return leftLabel.localeCompare(rightLabel, 'pt-BR');
+      }).forEach((key) => {
+        if (existing.has(key)) return;
+        const label = cards().find((card) => card.dataset.nicho === key)?.dataset.nichoLabel || key.replace(/-/g, ' ');
+        const button = document.createElement('button');
+        button.className = 'filtro';
+        button.type = 'button';
+        button.dataset.filter = key;
+        button.setAttribute('aria-pressed', 'false');
+        button.textContent = label;
+        nav.append(button);
+        bindFilter(button);
+      });
+      [...nav.querySelectorAll<HTMLButtonElement>('[data-filter]:not([data-filter="todos"])')]
+        .sort((left, right) => left.textContent!.localeCompare(right.textContent!, 'pt-BR'))
+        .forEach((button) => nav.append(button));
+      applyFilter(used.has(activeFilter) || activeFilter === 'todos' ? activeFilter : 'todos');
+    };
+    gallery.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach(bindFilter);
+    window.addEventListener('video-filters-refresh', refreshFilters);
+    refreshFilters();
+  });
+</script>
+
+<style is:global>
+  #videos .texto {
     max-width: 34rem;
     margin: -0.75rem 0 1.5rem;
     color: var(--suave);
   }
-  /* Atalhos dos nichos. No computador ficam presos abaixo do cabeçalho enquanto a marca rola. */
-  .atalhos ul {
+  #videos .filtros {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin: 0 0 1.5rem;
   }
-  .atalhos a {
+  #videos .filtro {
     display: inline-flex;
     align-items: center;
-    gap: 0.35em;
+    justify-content: center;
     min-height: 2.4rem;
-    padding: 0.45em 1em;
-    border: 1px solid var(--linha);
+    padding: 0.45rem 1rem;
+    border: 1px solid var(--destaque);
     border-radius: 999px;
+    background: var(--destaque);
+    color: var(--botao-texto);
+    font: inherit;
     font-size: 0.9rem;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: border-color 0.15s ease;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   }
-  .atalhos a:hover {
-    border-color: var(--texto);
+  #videos .filtro:hover { filter: brightness(.94); }
+  #videos .filtro.ativo {
+    border-color: var(--marrom-profundo);
+    box-shadow: 0 0 0 1px var(--marrom-profundo);
   }
-  .atalhos span {
-    font-size: 0.8em;
-    color: var(--suave);
-    font-variant-numeric: tabular-nums;
+  #videos .filtro:focus-visible {
+    outline: 2px solid var(--texto);
+    outline-offset: 3px;
   }
-  .grupo {
-    /* O título do nicho para logo abaixo do cabeçalho fixo. */
-    scroll-margin-top: 5rem;
-  }
-  .grupo + .grupo {
-    margin-top: clamp(2.5rem, 6vw, 3.5rem);
-  }
-  .atalhos + .grupo {
-    margin-top: 1.75rem;
-  }
-  h3 {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
-    margin-bottom: 1rem;
-    font-size: calc(clamp(1.4rem, 3.5vw, 1.9rem) * var(--escala));
-  }
-  h3 span {
-    font-family: var(--f-corpo);
-    font-size: 0.8rem;
-    font-weight: 400;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--suave);
-  }
-  .grade {
+  #videos .grade {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
   }
+  #videos .grade li[hidden] { display: none; }
   @media (max-width: 759px) {
-    .texto {
-      margin-inline: auto;
-      text-align: center;
-    }
-    h3 {
-      justify-content: center;
-    }
-    .atalhos ul {
-      justify-content: center;
-    }
-    .atalhos a {
-      min-height: 2.25rem;
-      font-size: 0.85rem;
-    }
+    #videos .texto { margin-inline: auto; text-align: center; }
+    #videos .filtros { justify-content: center; }
+    #videos .filtro { min-height: 2.25rem; font-size: 0.85rem; }
   }
-  @media (min-width: 760px) {
-    .atalhos {
-      position: sticky;
-      top: 3.75rem;
-      z-index: 5;
-      margin-inline: calc(-1 * clamp(1rem, 5vw, 3rem));
-      padding: 0.6rem clamp(1rem, 5vw, 3rem);
-      background: var(--fundo);
-    }
-    .grupo {
-      scroll-margin-top: 8.5rem;
-    }
-  }
-  /* 2 colunas no celular e 4 a partir do tablet: um nicho com 4 vídeos fecha a linha certinho. */
   @media (min-width: 640px) {
-    .grade {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1rem;
-    }
+    #videos .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
   }
   @media (min-width: 1024px) {
-    .grade {
-      gap: 1.25rem;
-    }
+    #videos .grade { max-width: 68rem; margin-inline: auto; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
   }
 </style>

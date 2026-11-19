@@ -1,0 +1,89 @@
+---
+import Cabecalho from './Cabecalho.astro';
+import { c } from '../lib/site';
+
+const faq = c.perguntasFrequentes!;
+---
+
+<section class="secao recuo perguntas" id="perguntas-frequentes" aria-labelledby="perguntas-titulo">
+  <Cabecalho titulo={faq.titulo} id="perguntas-titulo" />
+  <div class="lista">
+    {faq.lista.map(({ pergunta, resposta }) => (
+      <details class="item">
+        <summary>{pergunta}<span aria-hidden="true">+</span></summary>
+        <p>{resposta}</p>
+      </details>
+    ))}
+  </div>
+</section>
+
+<style>
+  .perguntas { position: relative; isolation: isolate; }
+  .perguntas::after {
+    content: '?';
+    position: absolute;
+    z-index: 0;
+    top: clamp(0.15rem, 1.2vw, 0.75rem);
+    right: clamp(2.25rem, 10vw, 9rem);
+    display: block;
+    color: var(--nude);
+    opacity: 0.28;
+    filter: blur(1.25px);
+    font-family: var(--f-titulo);
+    font-size: clamp(9rem, 19vw, 14rem);
+    line-height: 1;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .perguntas > :global(*) { position: relative; z-index: 1; }
+  .lista { display: grid; gap: 1rem; max-width: 56rem; margin: 0; }
+  .item {
+    border: 1px solid var(--linha);
+    border-radius: var(--raio, 1rem);
+    padding: 1.15rem 1.35rem;
+    background: var(--superficie);
+    transition: border-color 180ms ease, background-color 180ms ease;
+  }
+  .item,
+  summary,
+  .item p { font-family: var(--f-corpo); }
+  .item[open] { border-color: var(--destaque); }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    color: var(--texto);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.45;
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary span {
+    flex: 0 0 2rem;
+    display: grid;
+    width: 2rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid var(--linha);
+    border-radius: 50%;
+    color: var(--destaque);
+    font-size: 1.25rem;
+    font-weight: 400;
+    transition: transform 180ms ease;
+  }
+  .item[open] summary span { transform: rotate(45deg); }
+  summary:focus-visible { outline: 2px solid var(--destaque); outline-offset: 4px; }
+  .item p { max-width: 46rem; padding: 0.75rem 3rem 0.1rem 0; color: var(--suave); font-size: 0.94rem; line-height: 1.65; }
+  @media (max-width: 759px) {
+    .perguntas::after {
+      top: 0.1rem;
+      right: 2.6rem;
+      font-size: 8rem;
+      line-height: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; } }
+</style>

@@ -92,7 +92,7 @@ const video = z
         'faltou dizer se o {item} é autoral: true = gravado por conta própria, sem contrato; false = trabalho feito para a marca',
         'o campo "autoral" do {item} precisa ser true ou false, sem aspas',
       ),
-    ),
+    ).optional(),
     nicho: opcional,
     campanha: opcional,
   })
@@ -134,6 +134,18 @@ export const esquema = z
       lista: z.array(video, erro('', 'a lista de vídeos precisa estar entre colchetes [ ]')).default([]),
     }),
 
+    fotografias: secao('Fotografias', {
+      texto: opcional,
+      lista: z.array(z.strictObject({
+        arquivo: texto('faltou o nome do arquivo da {item}').regex(/^[a-z0-9][a-z0-9._-]*\.(jpg|jpeg|png|webp)$/i, { error: 'a fotografia precisa ser .jpg, .png ou .webp, sem espaços nem acentos' }),
+        descricao: texto('faltou descrever a {item}'),
+      })).default([]),
+    }),
+
+    formatos: secao('Formatos de conteúdo', {
+      lista: z.array(z.strictObject({ nome: texto('faltou o nome do {item}'), detalhe: opcional })).default([]),
+    }),
+
     campanha: z
       .strictObject({
         mostrar: sim(true),
@@ -142,6 +154,9 @@ export const esquema = z
         texto: opcional,
         botao: z.string().trim().default('Reservar minha data'),
         mensagemWhatsapp: opcional,
+        inicio: opcional,
+        fim: opcional,
+        pacotes: z.array(z.strictObject({ nome: opcional, detalhe: opcional, preco: opcional })).max(3).default([]),
         cor,
       })
       .optional(),
@@ -160,9 +175,22 @@ export const esquema = z
 
     resultados: secao('Resultados', {
       numeros: z.array(z.strictObject({ valor: texto('faltou o valor do {item} (ex.: "1,2 mi")'), legenda: texto('faltou a legenda do {item}') })).default([]),
-      prints: z.array(z.strictObject({ imagem: imagem('do print'), legenda: texto('faltou a legenda do {item}') })).default([]),
+      prints: z.array(z.strictObject({
+        imagem: imagem('do print'),
+        legenda: texto('faltou a descrição acessível do {item}'),
+        marca: opcional,
+        logo: imagem('do logo da marca').optional(),
+        data: opcional,
+      })).default([]),
       depoimentos: z
-        .array(z.strictObject({ texto: texto('faltou o texto do {item}'), autor: texto('faltou quem disse o {item}'), marca: opcional }))
+        .array(z.strictObject({
+          texto: texto('faltou o texto do {item}'),
+          autor: opcional,
+          marca: opcional,
+          logo: imagem('do logo da marca').optional(),
+          nota: z.number().int().min(1).max(5).optional(),
+          data: opcional,
+        }))
         .default([]),
     }),
 
@@ -171,6 +199,13 @@ export const esquema = z
       incluso: z.array(texto('o {item} está vazio')).default([]),
       direitosDeUso: opcional,
       observacao: opcional,
+    }),
+
+    perguntasFrequentes: secao('Perguntas frequentes', {
+      lista: z.array(z.strictObject({
+        pergunta: texto('faltou a pergunta do {item}'),
+        resposta: texto('faltou a resposta do {item}'),
+      })).default([]),
     }),
 
     valores: secao('Pacotes e valores', {
@@ -187,7 +222,7 @@ export const esquema = z
         )
         .default([]),
       avulsos: z
-        .array(z.strictObject({ nome: texto('faltou o nome do {item}'), preco: texto('faltou o preço do {item}') }))
+        .array(z.strictObject({ nome: texto('faltou o nome do {item}'), preco: texto('faltou o preço do {item}'), descricao: opcional }))
         .default([]),
       botao: z.string().trim().default('Quero este pacote'),
       observacao: opcional,
@@ -206,6 +241,16 @@ export const esquema = z
         error: 'o mídia kit precisa ser um link https:// ou um arquivo que esteja na pasta public (ex.: "midia-kit.pdf")',
       }),
     }),
+
+    linksBio: z.strictObject({
+      frase: opcional,
+      cupons: z.array(z.strictObject({
+        marca: texto('faltou o nome da marca do cupom'),
+        codigo: texto('faltou o código do cupom'),
+        url: z.url({ protocol: /^https$/, error: 'o link do cupom precisa começar com https://' }),
+        detalhe: opcional,
+      })).default([]),
+    }).default({}),
 
     seo: z.strictObject({ titulo: opcional, descricao: opcional }).default({}),
   })
@@ -233,13 +278,13 @@ export type Conteudo = z.output<typeof esquema>;
 const SECOES: Record<string, string> = {
   modoExemplo: 'Modo exemplo', endereco: 'Endereço do site', modoDosVideos: 'Modo dos vídeos', urlDosVideos: 'URL dos vídeos',
   tema: 'Tema', cores: 'Cores',
-  topo: 'Topo', videos: 'Vídeos', campanha: 'Campanha', diferenciais: 'Diferenciais', marcas: 'Marcas',
-  resultados: 'Resultados', comoTrabalho: 'Como trabalho', valores: 'Valores', contato: 'Contato', seo: 'SEO',
+  topo: 'Topo', videos: 'Vídeos', fotografias: 'Fotografias', formatos: 'Formatos', campanha: 'Campanha', diferenciais: 'Diferenciais', marcas: 'Marcas',
+  resultados: 'Resultados', comoTrabalho: 'Como trabalho', perguntasFrequentes: 'Perguntas frequentes', valores: 'Valores', contato: 'Contato', seo: 'SEO',
 };
 const ITENS: Record<string, string> = {
-  'videos.lista': 'vídeo', 'diferenciais.lista': 'diferencial', 'marcas.lista': 'marca',
+  'videos.lista': 'vídeo', 'fotografias.lista': 'fotografia', 'formatos.lista': 'formato', 'diferenciais.lista': 'diferencial', 'marcas.lista': 'marca',
   'resultados.numeros': 'número', 'resultados.prints': 'print', 'resultados.depoimentos': 'depoimento',
-  'comoTrabalho.incluso': 'item do "incluso"', 'valores.pacotes': 'pacote', 'valores.avulsos': 'item avulso',
+  'comoTrabalho.incluso': 'item do "incluso"', 'perguntasFrequentes.lista': 'pergunta frequente', 'valores.pacotes': 'pacote', 'valores.avulsos': 'item avulso',
 };
 const TIPOS: Record<string, string> = {
   string: 'um texto entre aspas', boolean: 'true ou false, sem aspas', array: 'uma lista entre colchetes [ ]',

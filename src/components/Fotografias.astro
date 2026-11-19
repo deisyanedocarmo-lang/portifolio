@@ -1,0 +1,211 @@
+---
+import Cabecalho from './Cabecalho.astro';
+import { c } from '../lib/site';
+
+const galeria = c.fotografias!;
+const legacyPhotoKeys: Record<string, string> = {
+  'cuidados-cabelos-carrossel.webp': 'fotografias-4',
+  'protetor-solar-carrossel.webp': 'fotografias-5',
+  'retrato-acessorios-carrossel.webp': 'fotografias-6',
+  'retrato-beleza-carrossel.webp': 'fotografias-7',
+  'moda-lifestyle-carrossel.webp': 'fotografias-8',
+  'look-acessorios-carrossel.webp': 'fotografias-9',
+  'oculos-estilo-carrossel.webp': 'fotografias-10',
+  'detalhe-moda-carrossel.webp': 'fotografias-11',
+};
+---
+
+<section class="secao recuo" id="fotografias" aria-labelledby="fotografias-titulo">
+  <Cabecalho rotulo="Portfólio" titulo={galeria.titulo} id="fotografias-titulo" />
+  {galeria.texto && <p class="texto">{galeria.texto}</p>}
+  <div class="faixa-fotos" tabindex="0" aria-label="Galeria de fotografias em faixas contínuas. Deslize para os lados para ver as imagens.">
+    <ul class="grade" data-photo-track data-photo-lane="topo">
+      {galeria.lista.map(({ arquivo, descricao }, index) => (
+        <li class="foto-item" data-photo-index={index} data-preview-media-key={arquivo === 'deisyane-triton.jpg' ? 'fotografias-triton' : legacyPhotoKeys[arquivo]}>
+          <figure><img src={`/fotografias/${arquivo}`} alt={descricao} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" fetchpriority={index === 0 ? 'high' : 'auto'} /></figure>
+        </li>
+      ))}
+    </ul>
+    <ul class="grade" data-photo-track data-photo-lane="base" aria-hidden="true"></ul>
+  </div>
+  <dialog class="foto-lightbox" data-photo-lightbox aria-label="Fotografia ampliada">
+    <button class="foto-fechar" type="button" data-photo-close aria-label="Fechar imagem">×</button>
+    <button class="foto-seta" type="button" data-photo-prev aria-label="Ver foto anterior">‹</button>
+    <img data-photo-expanded alt="" />
+    <button class="foto-seta" type="button" data-photo-next aria-label="Ver próxima foto">›</button>
+    <p data-photo-status aria-live="polite"></p>
+  </dialog>
+</section>
+
+<script>
+  const viewport = document.querySelector<HTMLElement>('#fotografias .faixa-fotos');
+  const tracks = [...(viewport?.querySelectorAll<HTMLUListElement>('[data-photo-track]') || [])];
+  const track = tracks[0];
+  const dialog = document.querySelector<HTMLDialogElement>('[data-photo-lightbox]');
+  const expanded = dialog?.querySelector<HTMLImageElement>('[data-photo-expanded]');
+  const status = dialog?.querySelector<HTMLElement>('[data-photo-status]');
+
+  if (track && viewport) {
+    let signature = '';
+    let editing = false;
+    let activeIndex = 0;
+    let interactionTimer: number | undefined;
+    let resumeTimer: number | undefined;
+
+    const originals = () => tracks.flatMap((row) => [...row.querySelectorAll<HTMLLIElement>(':scope > li:not([data-photo-clone])')]);
+    const refreshCarousel = () => {
+      const originalCards = originals();
+      const nextEditing = document.body.classList.contains('preview-editor-open');
+      const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const nextSignature = `${nextEditing}|${viewport.clientWidth}|${reducedMotion}|${originalCards.map((card) => `${card.dataset.previewMediaKey || card.dataset.photoIndex}:${card.querySelector('img')?.getAttribute('src') || ''}:${card.hidden}:${card.dataset.previewRemoved || ''}`).join('|')}`;
+      if (nextSignature === signature) return;
+      signature = nextSignature;
+      editing = nextEditing;
+      tracks.forEach((row) => {
+        row.querySelectorAll('[data-photo-clone]').forEach((clone) => clone.remove());
+        row.classList.remove('animar');
+      });
+
+      const allCards = originalCards;
+      const secondRow = tracks[1];
+      if (secondRow) {
+        if (editing || viewport.clientWidth < 760) {
+          allCards.forEach((card) => track.append(card));
+          secondRow.setAttribute('aria-hidden', 'true');
+        } else {
+          const splitAt = Math.ceil(allCards.length / 2);
+          allCards.slice(0, splitAt).forEach((card) => track.append(card));
+          allCards.slice(splitAt).forEach((card) => secondRow.append(card));
+          secondRow.removeAttribute('aria-hidden');
+        }
+      }
+      if (editing || reducedMotion || viewport.clientWidth < 1) return;
+
+      for (const row of tracks) {
+        const visibleCards = [...row.querySelectorAll<HTMLLIElement>(':scope > li:not([data-photo-clone])')]
+          .filter((card) => !card.hidden && card.dataset.previewRemoved !== 'true');
+        if (visibleCards.length < 2) continue;
+        const gap = Number.parseFloat(getComputedStyle(row).columnGap) || 0;
+        const cardWidth = visibleCards[0].getBoundingClientRect().width;
+        const baseWidth = visibleCards.length * cardWidth + gap * (visibleCards.length - 1);
+        const repeatsPerSet = Math.max(1, Math.ceil(viewport.clientWidth / Math.max(1, baseWidth)));
+        const loopDistance = repeatsPerSet * baseWidth;
+        const cloneCard = (original: HTMLLIElement) => {
+          const clone = original.cloneNode(true) as HTMLLIElement;
+          clone.dataset.photoOriginKey = original.dataset.previewMediaKey || original.dataset.photoIndex || '';
+          clone.removeAttribute('data-preview-media-key');
+          clone.removeAttribute('data-preview-media-list');
+          clone.removeAttribute('draggable');
+          clone.dataset.photoClone = '';
+          clone.setAttribute('aria-hidden', 'true');
+          clone.querySelectorAll('[data-preview-media-tools]').forEach((tools) => tools.remove());
+          clone.querySelectorAll('[data-preview-media-fields]').forEach((fields) => fields.remove());
+          const image = clone.querySelector('img');
+          if (image) image.draggable = false;
+          row.append(clone);
+        };
+        for (let repeat = 1; repeat < repeatsPerSet * 2; repeat++) visibleCards.forEach(cloneCard);
+        row.style.setProperty('--half-gap-fotos', `${gap / 2}px`);
+        row.style.setProperty('--duracao-faixa-fotos', `${loopDistance / 12}s`);
+        row.classList.toggle('animar', row.scrollWidth > viewport.clientWidth + 1);
+      }
+    };
+
+    const pauseForInteraction = () => {
+      viewport.classList.remove('retomando');
+      viewport.classList.add('interagindo');
+      window.clearTimeout(interactionTimer);
+      interactionTimer = window.setTimeout(() => viewport.classList.remove('interagindo'), 3500);
+    };
+    viewport.addEventListener('pointerdown', pauseForInteraction, { passive: true });
+    viewport.addEventListener('touchstart', pauseForInteraction, { passive: true });
+    viewport.addEventListener('focusin', pauseForInteraction);
+    viewport.addEventListener('pointerenter', () => viewport.classList.add('interagindo'));
+    viewport.addEventListener('pointerleave', () => viewport.classList.remove('interagindo', 'retomando'));
+    new MutationObserver(() => queueMicrotask(refreshCarousel)).observe(viewport, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'hidden', 'data-preview-removed'] });
+    new MutationObserver(() => queueMicrotask(refreshCarousel)).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    new ResizeObserver(refreshCarousel).observe(viewport);
+    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', refreshCarousel);
+    refreshCarousel();
+
+    const photoCards = () => originals().filter((card) => !card.hidden && card.dataset.previewRemoved !== 'true');
+    const showPhoto = (index: number) => {
+      const cards = photoCards();
+      if (!cards.length || !expanded) return;
+      activeIndex = (index + cards.length) % cards.length;
+      const image = cards[activeIndex].querySelector<HTMLImageElement>('img');
+      if (!image) return;
+      expanded.src = image.currentSrc || image.src;
+      expanded.alt = image.alt;
+      if (status) status.textContent = `${activeIndex + 1} de ${cards.length}`;
+    };
+    viewport.addEventListener('click', (event) => {
+      if (document.body.classList.contains('preview-editor-open')) return;
+      const image = (event.target as Element).closest<HTMLImageElement>('.foto-item img');
+      if (!image) return;
+      const card = image.closest<HTMLLIElement>('.foto-item');
+      const originKey = card?.dataset.photoOriginKey || card?.dataset.previewMediaKey || card?.dataset.photoIndex;
+      const index = photoCards().findIndex((candidate) => (candidate.dataset.previewMediaKey || candidate.dataset.photoIndex) === originKey);
+      if (index < 0) return;
+      showPhoto(index);
+      viewport.classList.add('ampliando');
+      dialog?.showModal();
+    });
+    const resumeCarousel = () => {
+      window.clearTimeout(interactionTimer);
+      window.clearTimeout(resumeTimer);
+      viewport.classList.remove('ampliando', 'interagindo');
+      viewport.classList.add('retomando');
+      resumeTimer = window.setTimeout(() => viewport.classList.remove('retomando'), 1000);
+    };
+    dialog?.addEventListener('close', resumeCarousel);
+    dialog?.querySelector('[data-photo-close]')?.addEventListener('click', () => dialog.close());
+    dialog?.querySelector('[data-photo-prev]')?.addEventListener('click', () => showPhoto(activeIndex - 1));
+    dialog?.querySelector('[data-photo-next]')?.addEventListener('click', () => showPhoto(activeIndex + 1));
+    dialog?.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+    window.addEventListener('photo-order-updated', refreshCarousel);
+  }
+</script>
+
+<style>
+  .texto { max-width: 36rem; margin: -0.6rem 0 1.5rem; color: var(--suave); }
+  .faixa-fotos { display: grid; gap: .8rem; max-width: 68rem; margin-inline: auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: none; touch-action: pan-x; }
+  .faixa-fotos::-webkit-scrollbar { display: none; }
+  .faixa-fotos:focus-visible { outline: 2px solid var(--destaque); outline-offset: 5px; }
+  .grade { display: flex; gap: .8rem; width: max-content; min-width: 100%; margin: 0; padding: .2rem .1rem .2rem; list-style: none; }
+  .grade.animar { animation: rolar-fotos var(--duracao-faixa-fotos, 150s) linear infinite; }
+  .grade[data-photo-lane='base'] { margin-left: clamp(6.4rem, 10.9vw, 8.4rem); }
+  .grade[data-photo-lane='base'].animar { animation-direction: reverse; }
+  .faixa-fotos.interagindo .grade, .faixa-fotos.ampliando .grade { animation-play-state: paused; }
+  .faixa-fotos.retomando .grade { animation-play-state: running !important; }
+  :global(#fotografias .foto-item) { flex: 0 0 clamp(12rem, 21vw, 16rem); min-width: 0; scroll-snap-align: start; }
+  :global(#fotografias .foto-item figure) { margin: 0; padding: .4rem; border: 1px solid var(--linha); border-radius: .75rem; background: var(--superficie); }
+  :global(#fotografias .foto-item img) { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: contain; background: var(--superficie); border-radius: .45rem; cursor: zoom-in; }
+  :global(#fotografias [data-photo-clone] img) { cursor: zoom-in; }
+  .foto-lightbox { position: fixed; box-sizing: border-box; width: min(94vw, 76rem); max-width: 94vw; height: min(92vh, 54rem); max-height: 92vh; padding: 3rem 4rem 2rem; border: 1px solid var(--linha); border-radius: 1.1rem; background: #fff; color: var(--texto); }
+  .foto-lightbox::backdrop { background: rgb(27 25 23 / .78); backdrop-filter: blur(4px); }
+  .foto-lightbox[open] { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: .75rem; }
+  .foto-lightbox img { grid-column: 2; grid-row: 1; display: block; width: 100%; height: 100%; max-width: 100%; max-height: calc(92vh - 7rem); object-fit: contain; cursor: default; }
+  .foto-lightbox p { grid-column: 1 / -1; grid-row: 2; margin: 0; color: var(--suave); font-size: .78rem; text-align: center; }
+  .foto-fechar { position: absolute; top: .7rem; right: .8rem; width: 2.5rem; height: 2.5rem; border: 1px solid var(--linha); border-radius: 50%; background: #fff; color: var(--texto); font-size: 1.5rem; cursor: pointer; }
+  .foto-seta { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 1px solid var(--linha); border-radius: 50%; background: #fff; color: var(--texto); font-size: 1.6rem; cursor: pointer; }
+  @keyframes rolar-fotos { to { transform: translateX(calc(-50% + var(--half-gap-fotos, .4rem))); } }
+  @media (max-width: 759px) {
+    .faixa-fotos { max-width: none; margin-inline: -1rem; padding-inline: 1rem; }
+    .grade { display: flex; width: max-content; min-width: 100%; gap: .65rem; margin: 0; }
+    :global(#fotografias .foto-item) { flex-basis: calc((100vw - 2.65rem) / 2.2); }
+    .foto-lightbox { width: 96vw; height: 88vh; padding: 3.25rem .65rem 1rem; }
+    .foto-lightbox[open] { grid-template-columns: 2rem minmax(0, 1fr) 2rem; gap: .25rem; }
+    .foto-lightbox img { max-height: calc(88vh - 6rem); }
+    .foto-seta { width: 2rem; height: 2rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .grade.animar { animation: none; }
+    .faixa-fotos { scroll-behavior: auto; }
+  }
+  :global(body.preview-editor-open #fotografias .faixa-fotos) { overflow: visible; }
+  :global(body.preview-editor-open #fotografias .grade[data-photo-lane='base']) { display: none; }
+  :global(body.preview-editor-open #fotografias .grade[data-photo-lane='topo']) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; min-width: 0; animation: none !important; }
+  :global(body.preview-editor-open #fotografias .foto-item[data-photo-clone]) { display: none; }
+  @media (max-width: 759px) { :global(body.preview-editor-open #fotografias .grade) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>

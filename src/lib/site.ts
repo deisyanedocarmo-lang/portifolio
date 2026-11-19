@@ -27,9 +27,9 @@ export function visualDoTema(nome: NomeTema, cores: Partial<Record<'fundo' | 'te
   const tema = TEMAS[nome];
   const { paleta, problemas } = montarPaleta({ fundo: tema.fundo, texto: tema.texto, destaque: tema.destaque, ...cores });
   const escuro = contraste(paleta.fundo, '#000000') < contraste(paleta.fundo, '#FFFFFF');
-  // Bloco da campanha: preto por padrão (combina com Black Friday), ou a cor escolhida em campanha.cor.
+  // Bloco de campanha: off-white por padrão, ou a cor escolhida em campanha.cor.
   // Num tema escuro, ganha um pouco da cor de destaque para se separar da página.
-  const fundoDaCampanha = c.campanha?.cor ?? (escuro ? misturar(paleta.destaque, paleta.fundo, 0.14) : '#111111');
+  const fundoDaCampanha = c.campanha?.cor ?? (escuro ? misturar(paleta.destaque, paleta.fundo, 0.14) : '#F7F5F2');
   const textoDaCampanha = [paleta.fundo, paleta.texto, '#FFFFFF', '#000000'].find((cor) => contraste(cor, fundoDaCampanha) >= 4.5)!;
   // Texto secundário sobre a cor da campanha: o mais suave que ainda passe em 4,5:1.
   const suaveDaCampanha =
@@ -46,7 +46,8 @@ export function visualDoTema(nome: NomeTema, cores: Partial<Record<'fundo' | 'te
       suave: suaveDaCampanha,
       linha: misturar(textoDaCampanha, fundoDaCampanha, 0.25),
     },
-    topoNaCampanha: tema.topoNaCampanha && !!c.campanha?.mostrar,
+    // A edição especial agora tem página própria e não altera as cores do portfólio principal.
+    topoNaCampanha: false,
     fontes: {
       titulo: { ...FONTES[tema.titulo], variavel: variavelDaFonte(tema.titulo) },
       corpo: { ...FONTES[tema.corpo], variavel: variavelDaFonte(tema.corpo) },
@@ -82,8 +83,8 @@ export function linkDeContato(destino: Destino, mensagem?: string) {
   if (destino === 'whatsapp' && whatsapp)
     return `https://wa.me/${whatsapp.numero}?text=${encodeURIComponent(mensagem ?? whatsapp.mensagem)}`;
   if (destino === 'email' && email) return `mailto:${email}?subject=${encodeURIComponent('Conteúdo UGC')}`;
-  if (destino === 'instagram' && instagram) return `https://www.instagram.com/${instagram}/`;
-  if (destino === 'tiktok' && tiktok) return `https://www.tiktok.com/@${tiktok}`;
+  if (destino === 'instagram' && instagram) return `https://www.instagram.com/${instagram.replace(/^@+/, '')}/`;
+  if (destino === 'tiktok' && tiktok) return `https://www.tiktok.com/@${tiktok.replace(/^@+/, '')}`;
   return undefined;
 }
 

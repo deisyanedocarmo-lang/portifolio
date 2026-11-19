@@ -3,20 +3,39 @@
 import { Font } from 'astro:assets';
 import { c, visual as visualPadrao, endereco, tituloDaPagina, descricaoDaPagina, linkDeContato, nichosDosVideos, type Visual } from '../lib/site';
 import { TEMAS } from '../lib/temas';
+import Metricas from '../components/Metricas.astro';
 
 interface Props {
   /** Tema da página. Padrão: o escolhido em src/data/creator.ts. */
   visual?: Visual;
   /** Páginas de demonstração dos temas não entram no Google. */
   indexar?: boolean;
+  /** Metadados opcionais para páginas além da página inicial. */
+  pageTitle?: string;
+  pageDescription?: string;
+  canonicalUrl?: string;
 }
-const { visual = visualPadrao, indexar = true } = Astro.props;
+const {
+  visual = visualPadrao,
+  indexar = true,
+  pageTitle = tituloDaPagina,
+  pageDescription = descricaoDaPagina,
+  canonicalUrl,
+} = Astro.props;
 const { paleta, tema, fontes, escuro, campanha, topoNaCampanha } = visual;
 
 // Sem endereço configurado (ex.: no computador), usa o endereço de onde a página está sendo vista.
 const base = endereco || Astro.url.origin;
+const canonical = canonicalUrl || `${base}/`;
 const variaveis = {
   '--fundo': paleta.fundo,
+  '--fundo-suave': '#F7F5F2',
+  '--nude': '#D6C2B2',
+  '--marrom-profundo': '#4B352B',
+  '--botao-fundo': '#806B5E',
+  '--botao-texto': '#FFFFFF',
+  '--campanha-botao-fundo': '#F7F5F2',
+  '--campanha-botao-texto': '#4B352B',
   '--texto': paleta.texto,
   '--suave': paleta.suave,
   '--superficie': paleta.superficie,
@@ -65,10 +84,10 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{tituloDaPagina}</title>
-    <meta name="description" content={descricaoDaPagina} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
     {!indexar && <meta name="robots" content="noindex" />}
-    <link rel="canonical" href={`${base}/`} />
+    <link rel="canonical" href={canonical} />
     <meta name="theme-color" content={topoNaCampanha ? campanha.fundo : paleta.fundo} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -76,9 +95,9 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     <meta property="og:type" content="profile" />
     <meta property="og:locale" content="pt_BR" />
     <meta property="og:site_name" content={c.topo.nome} />
-    <meta property="og:title" content={tituloDaPagina} />
-    <meta property="og:description" content={descricaoDaPagina} />
-    <meta property="og:url" content={`${base}/`} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonical} />
     <meta property="og:image" content={`${base}/og.png`} />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
@@ -89,6 +108,8 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
 
     <Font cssVariable={fontes.titulo.variavel as any} preload={preloadTitulo} />
     <Font cssVariable={fontes.corpo.variavel as any} preload={[{ weight: 400, style: 'normal' }]} />
+    <Font cssVariable="--fonte-bodoni" preload={[{ weight: 500, style: 'normal' }]} />
+    <Font cssVariable="--fonte-dmSerif" preload={[{ weight: 400, style: 'normal' }]} />
   </head>
   <body>
     <a class="pular" href="#conteudo">Pular para o conteúdo</a>
@@ -108,6 +129,7 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
       )
     }
     <slot />
+    <Metricas />
   </body>
 </html>
 
@@ -141,6 +163,10 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     line-height: 1.55;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--nude);
+    color: var(--texto);
   }
   img,
   video,
@@ -179,7 +205,7 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     text-underline-offset: 0.2em;
   }
   :focus-visible {
-    outline: 3px solid var(--texto);
+    outline: 3px solid var(--destaque);
     outline-offset: 3px;
   }
   /* Os links do cabeçalho fixo param a seção logo abaixo dele, sem esconder o título. */
@@ -219,6 +245,9 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     letter-spacing: 0.14em;
     text-transform: uppercase;
   }
+  .secao {
+    padding-block: clamp(4rem, 11vw, 8rem);
+  }
   .botao {
     display: inline-flex;
     align-items: center;
@@ -226,9 +255,9 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     gap: 0.6em;
     min-height: 3rem;
     padding: 0.85em 1.5em;
-    border-radius: max(var(--raio), 2px);
-    background: var(--destaque);
-    color: var(--no-destaque);
+    border-radius: 999px;
+    background: var(--botao-fundo);
+    color: var(--botao-texto);
     font-weight: 600;
     text-decoration: none;
     transition: transform 0.15s ease;
@@ -238,9 +267,6 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
   }
   .botao:active {
     transform: none;
-  }
-  .secao {
-    padding-block: clamp(4rem, 11vw, 8rem) 0;
   }
   .pular {
     position: absolute;

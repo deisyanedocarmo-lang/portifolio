@@ -1,77 +1,363 @@
 ---
-// Marcas com quem já trabalhou. Com logo, viram cartões brancos (funcionam em qualquer tema
-// e com logos coloridos); sem nenhum logo, aparecem só os nomes.
+// Logos das marcas parceiras em cartões brancos. Na prévia local, é possível adicionar logos.
 import { Image } from 'astro:assets';
-import Cabecalho from './Cabecalho.astro';
 import { c } from '../lib/site';
 
 const marcas = c.marcas!;
-const temLogo = marcas.lista.some((m) => m.logo);
 ---
 
-<section class="secao recuo" id="marcas" aria-labelledby="marcas-titulo">
-  <Cabecalho rotulo="Marcas" titulo={marcas.titulo} id="marcas-titulo" />
-  {
-    temLogo ? (
-      <ul class="cartoes">
-        {marcas.lista.map((m) => (
-          <li>{m.logo ? <Image src={m.logo} alt={m.nome} height={56} densities={[1, 2]} /> : <span>{m.nome}</span>}</li>
-        ))}
-      </ul>
-    ) : (
-      <ul class="nomes">
-        {marcas.lista.map((m) => (
-          <li>{m.nome}</li>
-        ))}
-      </ul>
-    )
-  }
+<section class="secao recuo marcas-trabalhadas" id="marcas" aria-labelledby="marcas-titulo">
+  <h2 class="rotulo-marcas" id="marcas-titulo">{marcas.titulo}</h2>
+  <div class="faixa-marcas" tabindex="0" aria-label="Logos das marcas com quem já trabalhei">
+    <ul class="cartoes" data-brand-track>
+      {marcas.lista.map((m) => (
+        <li class="logo-marca" title={m.nome}>
+          {m.logo ? <Image src={m.logo} alt={m.nome} /> : <span>{m.nome}</span>}
+        </li>
+      ))}
+    </ul>
+  </div>
+  {(import.meta.env.DEV || import.meta.env.MODE === 'preview') && (
+    <form class="adicionar-marca" data-brand-form>
+      <label>
+        Nome da marca (opcional)
+        <input name="brandName" maxlength="40" placeholder="Ex.: Domidona — deixe vazio se o nome estiver na logo" />
+      </label>
+      <label class="escolher-logo">
+        Escolher logo
+        <input name="brandLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" required />
+      </label>
+      <button type="submit">Adicionar logo</button>
+      <span class="marca-status" data-brand-status aria-live="polite"></span>
+    </form>
+  )}
 </section>
 
-<style>
-  .cartoes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
-    gap: 0.75rem;
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-brand-form]');
+  const track = document.querySelector<HTMLUListElement>('[data-brand-track]');
+  const shareToken = new URLSearchParams(location.search).get('mobile-preview');
+  if (shareToken) document.body.classList.add('mobile-preview-mode');
+
+  if (track) {
+    const metadataKey = 'deisyane-preview-brand-logos-v1';
+    const databaseName = 'deisyane-preview-brand-logo-files-v1';
+    const status = form?.querySelector<HTMLElement>('[data-brand-status]');
+
+    const openDatabase = () => new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(databaseName, 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('logos');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    const saveLogo = async (id: string, file: File) => {
+      const database = await openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction('logos', 'readwrite');
+        transaction.objectStore('logos').put(file, id);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+      database.close();
+    };
+
+    const readLogo = async (id: string) => {
+      const database = await openDatabase();
+      const file = await new Promise<Blob | undefined>((resolve, reject) => {
+        const request = database.transaction('logos').objectStore('logos').get(id);
+        request.onsuccess = () => resolve(request.result as Blob | undefined);
+        request.onerror = () => reject(request.error);
+      });
+      database.close();
+      return file;
+    };
+
+    const deleteLogoFile = async (id: string) => {
+      const database = await openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction('logos', 'readwrite');
+        transaction.objectStore('logos').delete(id);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+      database.close();
+    };
+
+    const getMetadata = (): { id: string; name: string }[] => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(metadataKey) || '[]') as { id: string; name: string }[];
+        const editorState = JSON.parse(localStorage.getItem('deisyane-preview-editor-state-v1') || '{}');
+        const deleted = new Set<string>(editorState.deleted || []);
+        const kept = saved.filter((logo) => !deleted.has(`brand-upload-${logo.id}`));
+        if (kept.length !== saved.length) {
+          localStorage.setItem(metadataKey, JSON.stringify(kept));
+          void Promise.all(saved.filter((logo) => deleted.has(`brand-upload-${logo.id}`)).map((logo) => deleteLogoFile(logo.id))).catch(() => undefined);
+        }
+        return kept;
+      } catch { return []; }
+    };
+
+    const cropLogoWhitespace = async (file: Blob): Promise<Blob> => {
+      try {
+        const source = await createImageBitmap(file);
+        const canvas = document.createElement('canvas');
+        canvas.width = source.width;
+        canvas.height = source.height;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) { source.close(); return file; }
+        context.drawImage(source, 0, 0);
+        const pixels = context.getImageData(0, 0, source.width, source.height).data;
+        let left = source.width, top = source.height, right = -1, bottom = -1;
+        for (let y = 0; y < source.height; y += 2) for (let x = 0; x < source.width; x += 2) {
+          const i = (y * source.width + x) * 4;
+          if (pixels[i + 3] < 24 || (pixels[i] > 248 && pixels[i + 1] > 248 && pixels[i + 2] > 248)) continue;
+          left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y);
+        }
+        source.close();
+        if (right < left || bottom < top) return file;
+        const padX = Math.max(4, Math.round((right - left) * 0.04));
+        const padY = Math.max(4, Math.round((bottom - top) * 0.1));
+        left = Math.max(0, left - padX); top = Math.max(0, top - padY);
+        right = Math.min(canvas.width - 1, right + padX); bottom = Math.min(canvas.height - 1, bottom + padY);
+        const cropped = document.createElement('canvas');
+        cropped.width = right - left + 1; cropped.height = bottom - top + 1;
+        const croppedContext = cropped.getContext('2d');
+        if (!croppedContext) return file;
+        croppedContext.drawImage(canvas, left, top, cropped.width, cropped.height, 0, 0, cropped.width, cropped.height);
+        return await new Promise<Blob>((resolve) => cropped.toBlob((blob) => resolve(blob || file), 'image/png'));
+      } catch { return file; }
+    };
+
+    const createLogo = async (name: string, file: Blob, id: string) => {
+      const card = document.createElement('li');
+      card.className = 'logo-marca';
+      card.title = name;
+      card.dataset.uploadedLogo = id;
+      const image = document.createElement('img');
+      image.src = URL.createObjectURL(await cropLogoWhitespace(file));
+      image.alt = name;
+      card.append(image);
+      track.append(card);
+      fitLogo(card);
+      window.dispatchEvent(new CustomEvent('brand-media-added', { detail: card }));
+    };
+
+    const fitLogo = (card: HTMLLIElement) => {
+      const image = card.querySelector<HTMLImageElement>('img');
+      if (!image) return;
+      const applyShape = () => {
+        if (image.naturalWidth && image.naturalHeight) {
+          const ratio = image.naturalWidth / image.naturalHeight;
+          card.classList.toggle('logo-horizontal', ratio >= 2.1);
+          card.classList.toggle('logo-compacta', ratio < 2.1);
+        }
+      };
+      if (image.complete) applyShape();
+      else if (card.dataset.logoShapeWatching !== 'true') {
+        card.dataset.logoShapeWatching = 'true';
+        image.addEventListener('load', () => {
+          delete card.dataset.logoShapeWatching;
+          applyShape();
+        }, { once: true });
+      }
+    };
+
+    const refreshCarousel = () => {
+      track.querySelectorAll('[data-brand-clone]').forEach((clone) => clone.remove());
+      const originals = [...track.querySelectorAll<HTMLLIElement>(':scope > li:not([data-brand-clone])')];
+      originals.forEach(fitLogo);
+      const motionAllowed = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const viewport = track.parentElement;
+      const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0;
+      const baseWidth = originals.reduce((sum, card) => sum + card.getBoundingClientRect().width, 0) + gap * Math.max(0, originals.length - 1);
+      const repeatsPerSet = viewport && baseWidth > 0 ? Math.max(1, Math.ceil(viewport.clientWidth / baseWidth)) : 1;
+      const shouldAnimate = !document.body.classList.contains('preview-editor-open') && originals.length > 1 && !!viewport && motionAllowed;
+      track.classList.toggle('animar', shouldAnimate);
+      if (shouldAnimate) {
+        const cloneCard = (original: HTMLLIElement) => {
+          const clone = original.cloneNode(true) as HTMLLIElement;
+          clone.querySelectorAll('[data-preview-media-tools]').forEach((tools) => tools.remove());
+          clone.removeAttribute('data-preview-media-key');
+          clone.draggable = false;
+          clone.dataset.brandClone = '';
+          clone.setAttribute('aria-hidden', 'true');
+          track.append(clone);
+        };
+        for (let repeat = 1; repeat < repeatsPerSet * 2; repeat++) originals.forEach(cloneCard);
+        const segmentWidth = baseWidth * repeatsPerSet;
+        track.style.setProperty('--meia-lacuna-marcas', `${gap / 2}px`);
+        track.style.setProperty('--duracao-faixa', `${Math.max(22, segmentWidth / 28)}s`);
+      }
+    };
+    window.addEventListener('brand-media-updated', refreshCarousel);
+    new MutationObserver(refreshCarousel).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', refreshCarousel);
+
+    let interactionTimer: number | undefined;
+    const pauseForInteraction = () => {
+      track.parentElement?.classList.add('interagindo');
+      window.clearTimeout(interactionTimer);
+      interactionTimer = window.setTimeout(() => track.parentElement?.classList.remove('interagindo'), 3500);
+    };
+    track.parentElement?.addEventListener('pointerdown', pauseForInteraction, { passive: true });
+    track.parentElement?.addEventListener('touchstart', pauseForInteraction, { passive: true });
+
+    if (shareToken) void (async () => {
+      const snapshot = await fetch(`/__preview_share/${encodeURIComponent(shareToken)}/state`, { cache: 'no-store' }).then((response) => response.ok ? response.json() : null).catch(() => null);
+      for (const brand of snapshot?.brands || []) {
+        const file = await fetch(`/__preview_share/${encodeURIComponent(shareToken)}/media/${encodeURIComponent(`brand-logo:${brand.id}`)}`, { cache: 'no-store' })
+          .then((response) => response.ok ? response.blob() : null).catch(() => null);
+        if (file && !track.querySelector(`[data-uploaded-logo="${CSS.escape(brand.id)}"]`)) await createLogo(brand.name, file, brand.id);
+      }
+      refreshCarousel();
+    })();
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const name = String(data.get('brandName') || '').trim();
+      const file = data.get('brandLogo');
+      if (!(file instanceof File) || !file.size) return;
+      try {
+        const id = crypto.randomUUID();
+        const fileName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+        const accessibleName = name || (fileName && !/^logo$/i.test(fileName) ? fileName : 'Logo da marca');
+        await saveLogo(id, file);
+        const metadata = [...getMetadata(), { id, name: accessibleName }];
+        localStorage.setItem(metadataKey, JSON.stringify(metadata));
+        await createLogo(accessibleName, file, id);
+        refreshCarousel();
+        form.reset();
+        if (status) status.textContent = 'Logo adicionada e salva neste navegador.';
+      } catch {
+        if (status) status.textContent = 'Não foi possível salvar. Tente uma imagem menor.';
+      }
+    });
+
+    if (form && !shareToken) void (async () => {
+      for (const item of getMetadata()) {
+        if (track.querySelector(`[data-uploaded-logo="${CSS.escape(item.id)}"]`)) continue;
+        const file = await readLogo(item.id).catch(() => undefined);
+        if (file) await createLogo(item.name, file, item.id);
+      }
+      refreshCarousel();
+    })();
+    refreshCarousel();
+    if (track.parentElement) new ResizeObserver(refreshCarousel).observe(track.parentElement);
   }
-  .cartoes li {
+</script>
+
+<style>
+  .rotulo-marcas {
+    margin: 0 0 1.35rem;
+    text-align: left;
+    color: var(--texto);
+    font-family: var(--f-titulo);
+    font-size: calc(clamp(1.9rem, 5vw, 3rem) * var(--escala));
+    font-weight: var(--peso-titulo);
+    letter-spacing: var(--espaco-titulo);
+    line-height: 1.05;
+  }
+  .faixa-marcas { overflow: hidden; }
+  .faixa-marcas:focus-visible { outline-offset: 5px; }
+  .cartoes {
+    display: flex;
+    width: max-content;
+    margin: 0;
+    gap: 0.65rem;
+    padding: 0.2rem 0 0.5rem;
+    list-style: none;
+  }
+  .cartoes.animar { animation: rolar-marcas var(--duracao-faixa, 24s) linear infinite; }
+  .faixa-marcas:hover .cartoes,
+  .faixa-marcas:focus-within .cartoes,
+  .faixa-marcas.interagindo .cartoes { animation-play-state: paused; }
+  :global(.logo-marca) {
     display: grid;
     place-items: center;
-    aspect-ratio: 5 / 3;
-    padding: 1rem 1.25rem;
+    flex: 0 0 6.25rem;
+    width: 6.25rem;
+    aspect-ratio: 1;
+    overflow: hidden;
+    padding: 0.55rem;
     border: 1px solid var(--linha);
-    border-radius: max(var(--raio), 12px);
-    background: #fff;
-    color: #1a1a1a;
+    border-radius: 50%;
+    background: var(--superficie);
+    color: var(--texto);
+    font-family: var(--f-corpo);
+    font-size: 0.82rem;
     font-weight: 600;
     text-align: center;
+    scroll-snap-align: start;
   }
-  .cartoes :global(img) {
-    width: auto;
-    max-width: 100%;
-    height: auto;
-    max-height: 3.5rem;
+  :global(.logo-marca img) {
+    display: block;
+    width: 82%;
+    height: 82%;
     object-fit: contain;
   }
-  .nomes {
-    font-family: var(--f-titulo);
-    font-weight: var(--peso-titulo);
-    font-size: calc(clamp(1.25rem, 3vw, 1.75rem) * var(--escala));
-    letter-spacing: var(--espaco-titulo);
-    text-transform: var(--caixa-titulo);
-    line-height: 1.4;
+  :global(.logo-marca.logo-compacta img) {
+    width: 60%;
+    height: 60%;
   }
-  .nomes li {
-    display: inline;
+  :global(.logo-marca.logo-compacta) {
+    border-radius: 0.7rem;
   }
-  .nomes li:not(:last-child)::after {
-    content: ' · ' / '';
-    color: var(--destaque);
-    white-space: pre;
+  :global(.logo-marca.logo-horizontal) {
+    flex-basis: 11rem;
+    width: 11rem;
+    aspect-ratio: 2.4 / 1;
+    border-radius: 0.8rem;
+    padding: 0.45rem;
+  }
+  :global(.logo-marca.logo-horizontal img) {
+    width: 82%;
+    height: 76%;
+  }
+  @keyframes rolar-marcas { to { transform: translateX(calc(-50% + var(--meia-lacuna-marcas, .325rem))); } }
+  .marcas-trabalhadas { padding-block: 0.5rem; }
+  .adicionar-marca {
+    display: none;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.65rem;
+    margin-top: 1rem;
+    color: var(--suave);
+    font-size: 0.78rem;
+  }
+  :global(body.preview-editor-open) .adicionar-marca { display: flex; }
+  :global(body.mobile-preview-mode) .adicionar-marca { display: none !important; }
+  .adicionar-marca label { display: grid; gap: 0.3rem; }
+  .adicionar-marca input:not([type='file']) {
+    width: min(14rem, 70vw);
+    min-height: 2.35rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--linha);
+    border-radius: 0.4rem;
+    background: var(--superficie);
+    color: var(--texto);
+    font: inherit;
+  }
+  .escolher-logo input { max-width: 13rem; font: inherit; }
+  .adicionar-marca button {
+    min-height: 2.35rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--destaque);
+    border-radius: 0.4rem;
+    background: var(--destaque);
+    color: var(--no-destaque);
+    font: 600 0.78rem var(--f-corpo);
+    cursor: pointer;
+  }
+  .marca-status { flex-basis: 100%; min-height: 1.1em; }
+  @media (prefers-reduced-motion: reduce) {
+    .cartoes.animar { animation: none; }
   }
   @media (max-width: 759px) {
-    .nomes {
-      text-align: center;
-    }
+    :global(.logo-marca) { flex-basis: 6rem; width: 6rem; padding: 0.45rem; font-size: 0.82rem; }
+    :global(.logo-marca.logo-horizontal) { flex-basis: 10rem; width: 10rem; aspect-ratio: 2.8 / 1; padding: 0.4rem; }
+    .adicionar-marca { align-items: stretch; flex-direction: column; }
+    .adicionar-marca input:not([type='file']) { width: 100%; }
   }
 </style>

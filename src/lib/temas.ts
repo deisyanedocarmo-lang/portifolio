@@ -19,13 +19,12 @@ export type ChaveFonte = keyof typeof FONTES;
 // peso/caixa/espacamento: como os títulos aparecem. raio: arredondamento dos cantos.
 // escala: tamanho dos títulos (fontes largas pedem menos de 1, fontes estreitas mais).
 // letra: largura média de uma letra do título (em "em"), usada para o nome nunca sair da tela.
-// topoNaCampanha: com a campanha ligada, o cabeçalho e o topo ganham a cor da campanha (preto
-// por padrão), emendando com a faixa e o bloco da Black Friday.
+// topoNaCampanha: com a campanha ligada, o cabeçalho e o topo também podem ganhar a cor da campanha.
 export const TEMAS = {
-  // Creme e preto, sem cor de destaque: elegante e neutro, deixa os vídeos aparecerem.
+  // Branco, carvão e marrom suave: uma base luminosa e editorial para destacar os conteúdos.
   revista: {
-    fundo: '#F4EFE7', texto: '#161412', destaque: '#161412', titulo: 'fraunces', corpo: 'instrumentSans',
-    peso: 400, caixa: 'none', espacamento: '-0.02em', raio: '2px', escala: 1, letra: 0.6, topoNaCampanha: true,
+    fundo: '#FFFFFF', texto: '#302C29', destaque: '#8B7566', titulo: 'fraunces', corpo: 'instrumentSans',
+    peso: 400, caixa: 'none', espacamento: '-0.02em', raio: '8px', escala: 1, letra: 0.6, topoNaCampanha: false,
   },
   // Quase preto com rosa-blush e serifa de revista de moda. Beleza de luxo, moda, noite.
   noite: {

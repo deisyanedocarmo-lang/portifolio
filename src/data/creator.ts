@@ -21,7 +21,7 @@ export default defineCreator({
   // true mostra uma faixa no topo avisando que o portfólio é de demonstração,
   // com pessoa, marcas e números fictícios. Mude para false quando todo o
   // conteúdo de exemplo tiver sido trocado pelo seu.
-  modoExemplo: true,
+  modoExemplo: false,
 
   // Endereço do site. Pode deixar vazio: na Cloudflare o site descobre sozinho
   // (fica algo como https://nome-do-projeto.pages.dev). Só preencha se tiver
@@ -51,20 +51,20 @@ export default defineCreator({
   // Opcional: troca as cores do tema. Use o formato '#RRGGBB'.
   // O build confere se o texto continua fácil de ler (contraste) e avisa se não estiver.
   // Ex.: cores: { destaque: '#8A2BE2' },
-  cores: {},
+  cores: { fundo: '#FFFFFF', texto: '#302C29', destaque: '#8B7566' },
 
   // ── TOPO ───────────────────────────────────────────────────────────────────
   topo: {
-    nome: 'Bia Exemplo',
+    nome: 'Deisyane Borges',
     // Nome do arquivo da sua foto. A foto vai na pasta src/imagens.
     // Uma foto vertical (em pé) fica melhor. JPG, PNG ou WEBP.
-    foto: 'foto.jpg',
+    foto: 'foto-deisyane.jpeg',
     // Descreva a foto em poucas palavras. É lido em voz alta para pessoas cegas.
-    fotoDescricao: 'Ilustração no lugar da foto da creator fictícia Bia Exemplo',
+    fotoDescricao: 'Deisyane sorrindo, usando uma blusa branca florida',
     // Seu nicho em uma linha. Aparece em letras pequenas acima do nome.
-    nicho: 'Skincare, casa e pets',
+    nicho: 'Beleza, moda, fitness, casa e decoração',
     // Bio curta: 2 ou 3 frases sobre o que você cria.
-    bio: 'Crio vídeos curtos que mostram o produto na vida real: na pia do banheiro, na bancada da cozinha, no passeio com o cachorro. Sou uma creator fictícia, inventada para este modelo de portfólio.',
+    bio: 'Mineira, casada, mãe da Laura e apaixonada por beleza, autocuidado, moda, lifestyle e muito mais. Encontro inspiração nos detalhes da vida real e transformo momentos simples em conteúdos leves, autênticos e sofisticados. No UGC, uno criatividade, estética e naturalidade para criar conteúdos que conectam marcas e pessoas de forma genuína.',
     botao: {
       // Texto do botão principal.
       texto: 'Quero um orçamento',
@@ -84,218 +84,84 @@ export default defineCreator({
     titulo: 'Vídeos',
     // Opcional: uma frase antes dos vídeos.
     texto: 'Vídeos curtos para anúncio e redes sociais, separados por nicho.',
-    // true: os vídeos tocam sem som enquanto aparecem na tela (a marca toca para ouvir).
-    // false: ficam parados mostrando a capa até alguém tocar.
-    previaAutomatica: true,
+    // Os vídeos ficam na capa até a pessoa tocar para assistir.
+    previaAutomatica: false,
     lista: [
       {
-        // Nome do arquivo do vídeo (o que o "npm run comprimir" gerou).
-        arquivo: 'exemplo-01-unboxing.mp4',
-        // Capa (imagem mostrada antes de tocar). Se não preencher, usa o mesmo
-        // nome do vídeo terminando em .jpg, que é o que o "npm run comprimir" gera.
-        capa: 'exemplo-01-unboxing.jpg',
-        // Marca ou produto do vídeo.
-        marca: 'Lumi Cosméticos (marca fictícia)',
-        // Formato. Sugestões: 'Unboxing', 'Review', 'Tutorial', 'Antes e depois',
-        // 'Rotina', 'Depoimento', 'Receita', 'Look do dia', 'Comparativo'.
-        formato: 'Unboxing',
-        // Opcional: nicho do vídeo (ex.: 'Skincare', 'Pets', 'Casa e organização').
-        // Com 2 nichos ou mais, os vídeos aparecem separados por nicho, cada um com
-        // seu título, e com atalhos no alto da seção. Escreva o nome sempre igual
-        // nos vídeos do mesmo nicho. Os nichos aparecem na ordem desta lista.
-        nicho: 'Skincare',
-        // Duração em minutos:segundos.
-        duracao: '0:12',
-        // true = conteúdo autoral: gravado por conta própria, SEM contrato com a marca.
-        //        Mostra o selo "Conteúdo autoral" para nunca parecer trabalho pago.
-        // false = trabalho feito para a marca.
-        autoral: false,
-        // Opcional: nome da campanha (igual ao da seção CAMPANHA lá embaixo).
-        // O vídeo passa a aparecer no bloco da campanha em vez da grade.
-        campanha: 'Black Friday',
+        arquivo: 'cafe-cafeteira.mp4',
+        capa: 'cafe-cafeteira.jpg',
+        marca: 'Cafeteira Electrolux',
+        formato: 'Demonstração',
+        nicho: 'Casa',
+        duracao: '0:18',
       },
       {
-        arquivo: 'exemplo-03-review.mp4',
-        capa: 'exemplo-03-review.jpg',
-        marca: 'Sérum de vitamina C (comprado por mim)',
-        formato: 'Review',
-        nicho: 'Skincare',
-        duracao: '0:10',
-        autoral: true,
+        arquivo: 'rotina-autocuidado.mp4',
+        capa: 'rotina-autocuidado.jpg',
+        marca: 'Cuidados capilares',
+        formato: 'Rotina de haircare',
+        nicho: 'Haircare',
+        duracao: '0:23',
       },
       {
-        arquivo: 'exemplo-07-rotina-noturna.mp4',
-        capa: 'exemplo-07-rotina-noturna.jpg',
-        marca: 'Lumi Cosméticos (marca fictícia)',
-        formato: 'Rotina',
-        nicho: 'Skincare',
-        duracao: '0:13',
-        autoral: false,
+        arquivo: 'look-lifestyle-moda.mp4',
+        capa: 'look-lifestyle-moda.jpg',
+        marca: 'Sandália',
+        formato: 'Lifestyle',
+        nicho: 'Moda',
+        duracao: '0:38',
       },
-      {
-        arquivo: 'exemplo-10-antes-e-depois.mp4',
-        capa: 'exemplo-10-antes-e-depois.jpg',
-        marca: 'Protetor solar (comprado por mim)',
-        formato: 'Antes e depois',
-        nicho: 'Skincare',
-        duracao: '0:09',
-        autoral: true,
-      },
-      {
-        arquivo: 'exemplo-11-tutorial.mp4',
-        capa: 'exemplo-11-tutorial.jpg',
-        marca: 'Lumi Cosméticos (marca fictícia)',
-        formato: 'Tutorial',
-        nicho: 'Skincare',
-        duracao: '0:12',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-02-rotina.mp4',
-        capa: 'exemplo-02-rotina.jpg',
-        marca: 'Casa Brisa (marca fictícia)',
-        formato: 'Rotina',
-        nicho: 'Casa e organização',
-        duracao: '0:15',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-05-antes-e-depois.mp4',
-        capa: 'exemplo-05-antes-e-depois.jpg',
-        marca: 'Organizadores de gaveta',
-        formato: 'Antes e depois',
-        nicho: 'Casa e organização',
-        duracao: '0:09',
-        autoral: true,
-      },
-      {
-        arquivo: 'exemplo-12-unboxing.mp4',
-        capa: 'exemplo-12-unboxing.jpg',
-        marca: 'Casa Brisa (marca fictícia)',
-        formato: 'Unboxing',
-        nicho: 'Casa e organização',
-        duracao: '0:11',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-13-review.mp4',
-        capa: 'exemplo-13-review.jpg',
-        marca: 'Aromatizador de ambiente (comprado por mim)',
-        formato: 'Review',
-        nicho: 'Casa e organização',
-        duracao: '0:10',
-        autoral: true,
-      },
-      {
-        arquivo: 'exemplo-06-depoimento.mp4',
-        capa: 'exemplo-06-depoimento.jpg',
-        marca: 'Café Aurora (marca fictícia)',
-        formato: 'Depoimento',
-        nicho: 'Café e cozinha',
-        duracao: '0:11',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-09-receita.mp4',
-        capa: 'exemplo-09-receita.jpg',
-        marca: 'Café Aurora (marca fictícia)',
-        formato: 'Receita',
-        nicho: 'Café e cozinha',
-        duracao: '0:14',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-14-unboxing.mp4',
-        capa: 'exemplo-14-unboxing.jpg',
-        marca: 'Verde Vivo (marca fictícia)',
-        formato: 'Unboxing',
-        nicho: 'Café e cozinha',
-        duracao: '0:13',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-15-review.mp4',
-        capa: 'exemplo-15-review.jpg',
-        marca: 'Cafeteira (comprada por mim)',
-        formato: 'Review',
-        nicho: 'Café e cozinha',
-        duracao: '0:09',
-        autoral: true,
-      },
-      {
-        arquivo: 'exemplo-04-tutorial.mp4',
-        capa: 'exemplo-04-tutorial.jpg',
-        marca: 'Pet Feliz (marca fictícia)',
-        formato: 'Tutorial',
-        nicho: 'Pets',
-        duracao: '0:14',
-        autoral: false,
-        campanha: 'Black Friday',
-      },
-      {
-        arquivo: 'exemplo-08-review.mp4',
-        capa: 'exemplo-08-review.jpg',
-        marca: 'Pet Feliz (marca fictícia)',
-        formato: 'Review',
-        nicho: 'Pets',
-        duracao: '0:10',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-16-unboxing.mp4',
-        capa: 'exemplo-16-unboxing.jpg',
-        marca: 'Pet Feliz (marca fictícia)',
-        formato: 'Unboxing',
-        nicho: 'Pets',
-        duracao: '0:12',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-17-rotina.mp4',
-        capa: 'exemplo-17-rotina.jpg',
-        marca: 'Nuvem Kids (marca fictícia)',
-        formato: 'Rotina',
-        nicho: 'Pets',
-        duracao: '0:14',
-        autoral: false,
-      },
-      {
-        arquivo: 'exemplo-18-antes-e-depois.mp4',
-        capa: 'exemplo-18-antes-e-depois.jpg',
-        marca: 'Caminha para gatos (comprada por mim)',
-        formato: 'Antes e depois',
-        nicho: 'Pets',
-        duracao: '0:10',
-        autoral: true,
-      },
+    ],
+  },
+
+  fotografias: {
+    mostrar: true,
+    titulo: 'Fotografias',
+    texto: 'Imagens pensadas para apresentar produtos com leveza e autenticidade.',
+    lista: [
+      { arquivo: 'deisyane-triton.jpg', descricao: 'Deisyane apresenta uma garrafa Triton personalizada em ambiente externo.' },
+      { arquivo: 'cuidados-cabelos-carrossel.webp', descricao: 'Deisyane apresenta um tratamento capilar.' },
+      { arquivo: 'protetor-solar-carrossel.webp', descricao: 'Deisyane mostra um protetor solar facial.' },
+      { arquivo: 'retrato-acessorios-carrossel.webp', descricao: 'Retrato de Deisyane com blusa branca e acessórios.' },
+      { arquivo: 'retrato-beleza-carrossel.webp', descricao: 'Retrato de beleza de Deisyane.' },
+      { arquivo: 'moda-lifestyle-carrossel.webp', descricao: 'Deisyane em um look escuro de lifestyle.' },
+      { arquivo: 'look-acessorios-carrossel.webp', descricao: 'Deisyane em um look com acessórios.' },
+      { arquivo: 'oculos-estilo-carrossel.webp', descricao: 'Retrato de Deisyane usando óculos.' },
+      { arquivo: 'detalhe-moda-carrossel.webp', descricao: 'Detalhe de sandálias em um look de moda.' },
     ],
   },
 
   // ── CAMPANHA SAZONAL ───────────────────────────────────────────────────────
   // Bloco de destaque logo abaixo do topo, com os vídeos marcados com
   // `campanha: 'Black Friday'` (ou o nome que estiver em `nome`).
-  // Troque o nome para 'Natal', 'Dia das Mães' etc. Para esconder: mostrar: false.
+  // Troque nome, chamada, texto e botão quando quiser; mostrar: true/false liga ou pausa
+  // a faixa do topo e o cartão especial. Pode pedir essa troca por mensagem, sem editar código.
   // Enquanto estiver ligada, aparece uma faixa no alto do site; no tema 'revista', o topo
   // inteiro também fica na cor da campanha (preto, ou a cor escolhida em `cor`).
   campanha: {
     mostrar: true,
     nome: 'Black Friday',
-    chamada: 'Agenda aberta para Black Friday',
-    texto: 'Ainda tenho datas para gravar conteúdos de Black Friday. Feche agora e receba os vídeos antes da semana da oferta.',
+    chamada: 'Pacotes especiais para Black Friday',
+    texto: 'Peça os detalhes dos pacotes desta edição diretamente pelo WhatsApp.',
     // Texto do botão (abre o WhatsApp já falando da campanha).
-    botao: 'Reservar minha data',
+    botao: 'Quero receber os pacotes',
     // Opcional: mensagem que já vem escrita no WhatsApp quando a marca toca no botão.
     // Se não preencher: "Oi! Vi seu portfólio e quero falar sobre Black Friday."
     // mensagemWhatsapp: '',
     // Opcional: cor de fundo do bloco, no formato '#RRGGBB'. Se não preencher, fica preto
     // (combina com Black Friday). Ex.: Natal → cor: '#1F4D36', Dia das Mães → cor: '#7A2E4D'.
-    // cor: '',
+    cor: '#4B352B',
+    // Período opcional: a edição especial só aparece dentro dessas datas.
+    inicio: '',
+    fim: '',
+    // Até três pacotes. Nome, detalhe e preço ficam em branco até você definir cada oferta.
+    pacotes: [],
   },
 
   // ── DIFERENCIAIS ───────────────────────────────────────────────────────────
   // De 3 a 5 itens curtos.
   diferenciais: {
-    mostrar: true,
+    mostrar: false,
     titulo: 'Por que trabalhar comigo',
     lista: [
       { titulo: 'Roteiro antes de gravar', texto: 'Mando o roteiro com gancho, demonstração e chamada para a marca aprovar.' },
@@ -312,14 +178,11 @@ export default defineCreator({
   // em cartões brancos; sem logo, aparece o nome.
   marcas: {
     mostrar: true,
-    titulo: 'Marcas com quem já trabalhei',
+    titulo: 'Marcas trabalhadas',
     lista: [
-      { nome: 'Lumi Cosméticos (marca fictícia)', logo: 'logo-lumi.png' },
-      { nome: 'Casa Brisa (marca fictícia)', logo: 'logo-casa-brisa.png' },
-      { nome: 'Pet Feliz (marca fictícia)', logo: 'logo-pet-feliz.png' },
-      { nome: 'Café Aurora (marca fictícia)', logo: 'logo-cafe-aurora.png' },
-      { nome: 'Verde Vivo (marca fictícia)', logo: 'logo-verde-vivo.png' },
-      { nome: 'Nuvem Kids (marca fictícia)', logo: 'logo-nuvem-kids.png' },
+      { nome: 'Lumy Creator', logo: 'logo-lumy-creator.png' },
+      { nome: 'amoianitas', logo: 'logo-amoianitas.png' },
+      { nome: 'Domidona', logo: 'logo-domidona.png' },
     ],
   },
 
@@ -328,71 +191,93 @@ export default defineCreator({
   // Cada lista pode ficar vazia [] e aquela parte some.
   resultados: {
     mostrar: true,
-    titulo: 'O que os vídeos entregaram',
-    numeros: [
-      { valor: '1,2 mi', legenda: 'visualizações somadas (número de exemplo)' },
-      { valor: '4,8%', legenda: 'taxa média de cliques nos anúncios (número de exemplo)' },
-      { valor: '38', legenda: 'vídeos entregues (número de exemplo)' },
+    titulo: 'Depoimentos',
+    numeros: [],
+    // Prints de feedback: o arquivo vai em src/imagens.
+    prints: [
+      { imagem: 'feedback-briefing.jpeg', legenda: 'Print de feedback real recebido por mensagem.' },
+      { imagem: 'feedback-criatividade.jpeg', legenda: 'Print de feedback real recebido por mensagem.' },
+      { imagem: 'feedback-adoramos.jpeg', legenda: 'Print de feedback real recebido por mensagem.' },
+      { imagem: 'feedback-aprovado.jpeg', legenda: 'Print de feedback real recebido por mensagem.' },
     ],
-    // Prints de métricas: o arquivo vai em src/imagens.
-    prints: [{ imagem: 'print-exemplo.png', legenda: 'Print de exemplo: alcance de um vídeo nos primeiros 7 dias' }],
-    depoimentos: [
-      {
-        texto: 'Depoimento de exemplo: entregou antes do prazo e o vídeo virou nosso anúncio principal do mês.',
-        autor: 'Pessoa fictícia',
-        marca: 'Lumi Cosméticos (fictícia)',
-      },
-    ],
+    depoimentos: [],
   },
 
   // ── COMO EU TRABALHO ───────────────────────────────────────────────────────
   comoTrabalho: {
-    mostrar: true,
+    mostrar: false,
     titulo: 'Como eu trabalho',
-    prazo: '5 a 7 dias úteis depois de receber o produto',
-    incluso: [
-      'Roteiro aprovado antes da gravação',
-      'Vídeo vertical 9:16 editado, com legenda',
-      'Duas rodadas de ajuste',
-      'Arquivo sem legenda, se a marca pedir',
+    prazo: 'Os vídeos são entregues em até 7 dias úteis.',
+    incluso: [],
+    direitosDeUso: 'Todos os pacotes incluem uso em anúncios por 3 meses e uso orgânico permanente.',
+    observacao: '',
+  },
+
+  // ── PERGUNTAS FREQUENTES ───────────────────────────────────────────────────
+  perguntasFrequentes: {
+    mostrar: true,
+    titulo: 'Perguntas frequentes',
+    lista: [
+      { pergunta: 'Em quanto tempo recebo os vídeos?', resposta: 'Os vídeos são entregues em até 7 dias úteis.' },
+      { pergunta: 'Posso usar os vídeos em anúncios?', resposta: 'Sim. Todos os pacotes incluem uso em anúncios por 3 meses e uso orgânico permanente.' },
+      { pergunta: 'Como funciona o pagamento?', resposta: 'O pagamento é feito em 50% via Pix para reservar a data e os 50% restantes na entrega. Também aceitamos cartão.' },
+      { pergunta: 'Vocês emitem nota fiscal?', resposta: 'Sim, emitimos nota fiscal.' },
     ],
-    direitosDeUso: 'Uso orgânico vitalício nas redes da marca. Uso em anúncios pagos por até 4 meses, sem custo extra.',
-    // Opcional: uma observação no fim da seção.
-    observacao: 'Exclusividade, arquivos brutos e urgência são combinados à parte.',
   },
 
   // ── VALORES ────────────────────────────────────────────────────────────────
   // Pacotes com preço: a marca decide mais rápido quando já sabe quanto custa.
   // Cada pacote tem um botão que abre o WhatsApp já falando daquele pacote.
   valores: {
-    mostrar: true,
+    mostrar: false,
     titulo: 'Pacotes e valores',
     // Opcional: uma frase antes dos pacotes.
-    texto: 'Escolha o pacote que combina com a sua campanha. Valores de exemplo: troque pelos seus.',
+    texto: 'Pacotes pensados para diferentes objetivos de conteúdo.',
     pacotes: [
-      // nome: o que a marca recebe. detalhe: um complemento curto (opcional).
+      // nome: o que a marca recebe. detalhe: a identificação editorial do pacote.
       // preco: se ficar vazio, aparece "Sob consulta".
-      // etiqueta (opcional): destaca o pacote, ex.: 'Mais pedido'.
-      { nome: '1 vídeo', detalhe: '+ 2 fotos', preco: 'R$ 400', descricao: 'Para conhecer meu trabalho e testar o formato UGC.' },
+      // etiqueta (opcional): destaca visualmente um pacote.
+      { nome: '1 vídeo + 2 fotos', detalhe: 'Pacote 1', preco: 'R$ 250,00' },
       {
-        nome: '3 vídeos',
-        detalhe: '+ 5 fotos',
-        preco: 'R$ 1.050',
-        descricao: 'Três ganchos diferentes para a marca descobrir qual funciona melhor nos anúncios.',
+        nome: '2 vídeos + 3 fotos',
+        detalhe: 'Pacote 2',
+        preco: 'R$ 450,00',
+      },
+      {
+        nome: '3 vídeos + 6 fotos',
+        detalhe: 'Pacote 3',
+        preco: 'R$ 650,00',
         etiqueta: 'Mais pedido',
       },
-      { nome: '5 vídeos', detalhe: '+ 8 fotos', preco: 'R$ 1.600', descricao: 'Uma sequência pensada para a campanha inteira.' },
+      {
+        nome: '4 vídeos + 8 fotos',
+        detalhe: 'Pacote 4',
+        preco: 'R$ 850,00',
+      },
     ],
-    // Opcional: itens vendidos separados.
+    // Extras opcionais, em uma apresentação mais discreta que os pacotes.
     avulsos: [
-      { nome: 'Foto de produto', preco: 'R$ 60' },
-      { nome: 'Variação de gancho ou chamada', preco: 'R$ 80' },
-      { nome: 'Cada mês extra de uso em anúncios', preco: 'R$ 60' },
+      { nome: 'Vídeo extra', preco: 'R$ 200', descricao: 'Roteiro, gravação e edição de um novo vídeo.' },
+      { nome: 'Foto extra', preco: 'R$ 35', descricao: 'Foto de produto ou lifestyle com tratamento básico.' },
+      { nome: 'Story extra', preco: 'R$ 40', descricao: 'Conteúdo curto para publicação no seu perfil.' },
+      { nome: 'Collab no meu perfil', preco: 'R$ 100', descricao: 'Publicação em colaboração no Instagram, conforme combinado.' },
     ],
     // Texto do botão de cada pacote.
-    botao: 'Quero este pacote',
+    botao: 'Quero esse pacote',
     // Opcional: uma observação no fim da seção.
-    observacao: 'Todos os pacotes incluem roteiro, gravação, edição e duas rodadas de ajuste.',
+  },
+
+  formatos: {
+    mostrar: true,
+    titulo: 'Conteúdo para cada objetivo',
+    lista: [
+      { nome: 'Vídeo UGC', detalhe: 'Vídeos autênticos que apresentam a marca na rotina real.' },
+      { nome: 'Conteúdo para anúncios', detalhe: 'Roteiros e cortes pensados para prender a atenção e gerar ação.' },
+      { nome: 'Fotos de produto', detalhe: 'Imagens lifestyle que mostram o produto em uso, com leveza e naturalidade.' },
+      { nome: 'Stories', detalhe: 'Conteúdos rápidos para apresentar novidades e criar conversa.' },
+      { nome: 'Collab no meu perfil', detalhe: 'Publicação em parceria no meu Instagram ou TikTok, conectando a marca à minha comunidade.' },
+      { nome: 'Carrossel', detalhe: 'Uma sequência visual para explicar benefícios e contar a história do produto.' },
+    ],
   },
 
   // ── CONTATO ────────────────────────────────────────────────────────────────
@@ -402,16 +287,25 @@ export default defineCreator({
     texto: 'Me conte o produto, o prazo e onde o vídeo vai rodar. Respondo em até um dia útil.',
     whatsapp: {
       // 55 + DDD + número. Pode escrever com espaço ou traço.
-      numero: '55 11 90000-0000',
+      numero: '55 31 99986-9619',
       // Mensagem que já aparece escrita quando a marca abre o WhatsApp.
-      mensagem: 'Oi, Bia! Vi seu portfólio e quero conversar sobre um conteúdo UGC.',
+      mensagem: 'Oi, Deisyane! Vi seu portfólio e quero conversar sobre um conteúdo UGC.',
     },
-    email: 'bia@example.com',
+    email: 'contatp.deisyaneborges@gmail.com',
     // Só o perfil, com ou sem @.
-    instagram: '@instagram',
-    tiktok: '@tiktok',
+    instagram: 'bydeisyaneborges',
+    tiktok: 'bydeisyaneborges',
     // Opcional: link do mídia kit (https://...) ou um PDF colocado na pasta public (ex.: 'midia-kit.pdf').
     midiaKit: '',
+  },
+
+  // ── PÁGINA DE LINKS PARA A BIO DO INSTAGRAM ────────────────────────────────
+  // Para incluir outro cupom, acrescente uma marca, o código e o endereço da loja.
+  linksBio: {
+    frase: 'Conteúdo real, recomendações e novidades.',
+    cupons: [
+      { marca: 'Triton', codigo: 'DEISYANE5', url: 'https://usetriton.com.br/', detalhe: 'Use meu cupom na loja Triton.' },
+    ],
   },
 
   // ── GOOGLE E COMPARTILHAMENTO ──────────────────────────────────────────────

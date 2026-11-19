@@ -1,6 +1,6 @@
 // npm run comprimir
 // Pega os vídeos de videos-originais/ e gera, para cada um:
-//   • nome-do-video.mp4 → H.264, vertical 720x1280, até 30 fps, pronto para web, sem metadados
+//   • nome-do-video.mp4 → H.264, vertical 1080x1920, até 30 fps, pronto para web, sem metadados
 //   • nome-do-video.jpg → capa: o primeiro quadro, para a prévia começar sem dar salto na tela
 // Onde salva depende de `modoDosVideos` em src/data/creator.ts:
 //   • 'local' → public/videos/ (vai junto com o site; cada arquivo fica abaixo de 24 MB)
@@ -98,7 +98,7 @@ for (const original of originais) {
     avisos.push(`${original}: o vídeo não é vertical. Cortei as laterais para ficar em 9:16; confira se nada importante ficou de fora.`);
 
   // Teto de qualidade em kbit/s. No modo local, baixa o teto para o arquivo caber no limite da Cloudflare.
-  let kbps = 2500;
+  let kbps = 4500;
   if (MODO === 'local' && medidas.duracao > 0) kbps = Math.min(kbps, Math.floor((ALVO * 8) / 1000 / medidas.duracao - 128));
   if (kbps < 400) {
     avisos.push(`${original}: tem ${minutos(medidas.duracao)} e é longo demais para o modo local (a imagem ia ficar ruim para caber em 24 MB). Corte o vídeo ou use o modo "r2".`);
@@ -113,9 +113,9 @@ for (const original of originais) {
     const video = roda('ffmpeg', [
       '-hide_banner', '-loglevel', 'error', '-y', '-i', entrada,
       '-map', '0:v:0', '-map', '0:a:0?',
-      '-vf', 'scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1',
+      '-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1',
       '-fpsmax', '30',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '23', '-maxrate', `${kbps}k`, '-bufsize', `${kbps * 2}k`,
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-maxrate', `${kbps}k`, '-bufsize', `${kbps * 2}k`,
       '-profile:v', 'high', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '128k', '-ac', '2',
       '-map_metadata', '-1', '-map_chapters', '-1',

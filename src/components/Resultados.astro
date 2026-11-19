@@ -1,167 +1,248 @@
 ---
-// Resultados: números, prints e depoimentos. Cada parte some se a lista estiver vazia.
+// Prints reais de feedback em um carrossel editorial com visualização ampliada.
 import { Image } from 'astro:assets';
 import Cabecalho from './Cabecalho.astro';
 import { c } from '../lib/site';
 
-const { titulo, numeros, prints, depoimentos } = c.resultados!;
+const { titulo, numeros, prints } = c.resultados!;
 ---
 
-<section class="secao recuo" id="resultados" aria-labelledby="resultados-titulo">
-  <Cabecalho rotulo="Resultados" titulo={titulo} id="resultados-titulo" />
+<section class="secao recuo depoimentos-secao" id="resultados" aria-labelledby="resultados-titulo">
+  <Cabecalho rotulo="Depoimentos" titulo={titulo} id="resultados-titulo" previewTextKey="section-testimonials-title" />
+  <p class="depoimentos-intro" data-preview-text-key="section-testimonials-intro">Cada parceria é uma oportunidade de criar algo especial.</p>
   {
     numeros.length > 0 && (
       <dl class="numeros">
         {numeros.map((n) => (
-          <div>
-            <dt>{n.legenda}</dt>
-            <dd>{n.valor}</dd>
-          </div>
+          <div><dt>{n.legenda}</dt><dd>{n.valor}</dd></div>
         ))}
       </dl>
     )
   }
-  <div class="provas">
-  {
-    prints.length > 0 && (
-      <div class="prints">
-        {prints.map((p) => (
-          <figure>
-            <Image src={p.imagem} alt={p.legenda} widths={[320, 480, 720]} sizes="(min-width: 760px) 30vw, 46vw" />
-            <figcaption>{p.legenda}</figcaption>
+
+  <div class="depoimentos-carousel" data-testimonial-carousel aria-roledescription="carrossel" aria-label="Prints de depoimentos">
+    <button class="seta seta-anterior" type="button" data-testimonial-prev aria-label="Ver depoimento anterior">‹</button>
+    <div class="depoimentos-palco" data-testimonial-stage>
+      <div class="depoimentos-trilho" data-testimonial-track data-testimonial-prints>
+        {prints.map((print, index) => (
+          <figure
+            class="print-card"
+            data-testimonial-slide
+            data-preview-media-key={`resultados-print-${index}-${print.legenda.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+            data-testimonial-id={`print-${index}`}
+            data-testimonial-brand={print.marca || undefined}
+            data-testimonial-date={print.data || undefined}
+          >
+            <div class="print-moldura">
+              <Image
+                src={print.imagem}
+                alt={print.legenda}
+                class="print-imagem"
+                loading={index < 3 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+            </div>
+            {(print.marca || print.logo || print.data) && (
+              <figcaption class="print-meta">
+                {(print.marca || print.logo) && (
+                  <span class="print-marca">
+                    {print.logo && <Image src={print.logo} alt={print.marca || 'Logo da marca'} width={44} height={44} />}
+                    {print.marca && <strong>{print.marca}</strong>}
+                  </span>
+                )}
+                {print.data && <time datetime={print.data}>{print.data}</time>}
+              </figcaption>
+            )}
           </figure>
         ))}
       </div>
-    )
-  }
-  {
-    depoimentos.length > 0 && (
-      <div class="depoimentos">
-        {depoimentos.map((d) => (
-          <figure>
-            <blockquote>
-              <p>{d.texto}</p>
-            </blockquote>
-            <figcaption>
-              {d.autor}
-              {d.marca && <span>, {d.marca}</span>}
-            </figcaption>
-          </figure>
-        ))}
-      </div>
-    )
-  }
+    </div>
+    <button class="seta seta-proxima" type="button" data-testimonial-next aria-label="Ver próximo depoimento">›</button>
   </div>
+
+  <dialog class="print-lightbox" data-testimonial-lightbox aria-label="Visualização ampliada do depoimento">
+    <button class="lightbox-fechar" type="button" data-lightbox-close aria-label="Fechar imagem">×</button>
+    <button class="lightbox-seta lightbox-anterior" type="button" data-lightbox-prev aria-label="Ver print anterior">‹</button>
+    <img data-lightbox-image alt="Print ampliado do depoimento" />
+    <button class="lightbox-seta lightbox-proxima" type="button" data-lightbox-next aria-label="Ver próximo print">›</button>
+    <p data-lightbox-status aria-live="polite"></p>
+  </dialog>
 </section>
 
 <style>
-  .numeros {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-    gap: 2rem 3rem;
+  .depoimentos-secao { --cartao-fundo: var(--superficie, #fff); padding-block: clamp(4rem, 9vw, 6.5rem); }
+  .depoimentos-secao :global(.cabecalho) { justify-items: center; margin-bottom: .7rem; text-align: center; }
+  .depoimentos-secao :global(.cabecalho .kicker) { color: var(--marrom-profundo); font-size: .72rem; letter-spacing: .28em; text-transform: uppercase; }
+  .depoimentos-secao :global(.cabecalho .kicker)::after { content: ''; display: inline-block; width: 2.7rem; height: 1px; margin: 0 0 .2rem .8rem; background: var(--destaque); }
+  .depoimentos-secao :global(.cabecalho h2) { max-width: 60rem; font-size: calc(clamp(1.9rem, 5vw, 3rem) * var(--escala)); letter-spacing: -.035em; }
+  @media (min-width: 760px) {
+    .depoimentos-secao :global(.cabecalho) { justify-items: start; text-align: left; }
+    .depoimentos-secao :global(.cabecalho h2) { text-align: left; }
   }
-  .numeros div {
-    display: flex;
-    flex-direction: column-reverse;
-    justify-content: flex-end;
-    gap: 0.6rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--linha);
-  }
-  dd {
-    font-family: var(--f-titulo);
-    font-weight: var(--peso-titulo);
-    font-size: calc(clamp(2.6rem, 8vw, 4.25rem) * var(--escala));
-    letter-spacing: var(--espaco-titulo);
-    line-height: 0.9;
-    color: var(--destaque);
-  }
-  dt {
-    max-width: 18rem;
-    color: var(--suave);
-  }
-  /* Prints e depoimentos lado a lado no computador. */
-  .provas {
-    display: grid;
-    gap: 3rem;
-    margin-top: clamp(3rem, 8vw, 4.5rem);
-  }
-  .provas:not(:has(*)) {
-    display: none;
-  }
-  @media (min-width: 860px) {
-    .provas:has(.prints):has(.depoimentos) {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-      column-gap: clamp(2rem, 5vw, 5rem);
-      align-items: center;
-    }
-  }
-  .prints {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(46%, 13rem), 1fr));
-    gap: 1.5rem 1rem;
-  }
-  .prints :global(img) {
-    width: 100%;
-    height: auto;
-    border-radius: var(--raio);
-    box-shadow: 0 0 0 1px var(--linha);
-  }
-  .prints figcaption {
-    margin-top: 0.6rem;
-    font-size: 0.85rem;
-    color: var(--suave);
-  }
-  .depoimentos {
-    display: grid;
-    gap: 3rem;
-  }
-  blockquote p {
-    max-width: 46rem;
-    font-family: var(--f-titulo);
-    font-style: var(--italico);
-    font-size: calc(clamp(1.3rem, 3.5vw, 1.9rem) * var(--escala));
-    line-height: 1.25;
-    text-wrap: pretty;
-  }
-  blockquote p::before {
-    content: '“';
-    color: var(--destaque);
-  }
-  blockquote p::after {
-    content: '”';
-    color: var(--destaque);
-  }
-  .depoimentos figcaption {
-    margin-top: 1rem;
-    font-weight: 600;
-  }
-  .depoimentos figcaption::before {
-    content: '— ' / '';
-  }
-  .depoimentos figcaption span {
-    font-weight: 400;
-  }
+  .depoimentos-intro { margin: 0 0 clamp(2.5rem, 5vw, 3.5rem); color: var(--suave); text-align: left; font-size: clamp(1rem, 2.3vw, 1.35rem); }
+  .numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 2rem 3rem; margin: 0 0 3rem; }
+  .numeros div { display: flex; flex-direction: column-reverse; gap: .6rem; padding-top: 1rem; border-top: 1px solid var(--linha); }
+  .numeros dd { font-family: var(--f-titulo); font-weight: var(--peso-titulo); font-size: calc(clamp(2.6rem, 8vw, 4.25rem) * var(--escala)); letter-spacing: var(--espaco-titulo); line-height: .9; color: var(--destaque); }
+  .numeros dt { max-width: 18rem; color: var(--suave); }
+  .depoimentos-carousel { position: relative; box-sizing: border-box; width: min(100%, 78rem); margin-inline: auto; padding-inline: clamp(2.5rem, 7vw, 5.5rem); overflow-x: clip; touch-action: pan-y; }
+  .depoimentos-palco { display: grid; min-height: 18rem; perspective: 1200px; }
+  .depoimentos-trilho { display: grid; grid-area: 1 / 1; align-items: stretch; }
+  .print-card { position: relative; grid-area: 1 / 1; display: grid; grid-template-rows: minmax(0, 1fr) auto; box-sizing: border-box; width: min(100%, 25rem); height: 18rem; margin: 0 auto; padding: clamp(1rem, 3vw, 1.65rem); overflow: hidden; border: 1px solid var(--linha, #e8e4df); border-radius: 1.35rem; background: var(--cartao-fundo); box-shadow: 0 12px 38px rgb(48 44 41 / .07); opacity: 0; pointer-events: none; transform: translateX(0) scale(.84); transition: transform .65s cubic-bezier(.2,.75,.25,1), opacity .5s ease, box-shadow .5s ease; }
+  .print-card[data-position="center"] { z-index: 3; opacity: 1; pointer-events: auto; transform: translateX(0) scale(1); box-shadow: 0 22px 60px rgb(48 44 41 / .12); }
+  .print-card[data-position="left"] { z-index: 2; opacity: .52; pointer-events: auto; transform: translateX(-77%) scale(.87); }
+  .print-card[data-position="right"] { z-index: 2; opacity: .52; pointer-events: auto; transform: translateX(77%) scale(.87); }
+  .print-card[data-position="hidden"] { visibility: hidden; }
+  .print-moldura { display: grid; min-width: 0; min-height: 0; place-items: center; overflow: hidden; border-radius: .85rem; background: #faf9f7; }
+  .print-moldura :global(img.print-imagem) { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; object-position: center; cursor: zoom-in; }
+  .print-meta { display: flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 2.7rem; padding: .65rem .3rem 0; color: var(--suave); font-size: .84rem; }
+  .print-marca { display: flex; align-items: center; gap: .65rem; min-width: 0; color: var(--texto); font-family: var(--f-titulo); }
+  .print-marca :global(img) { width: 2.5rem; height: 2.5rem; flex: 0 0 auto; border-radius: 50%; object-fit: contain; background: #f5f3ef; }
+  .print-meta time { margin-left: auto; }
+  :global(body.preview-editor-open) .print-card { overflow: visible; }
+  :global(body.preview-editor-open #resultados .print-card[data-position="center"] .preview-media-tools) { position: absolute; z-index: 9; top: .45rem; right: .45rem; display: flex; margin: 0; }
+  :global(#resultados .print-card:not([data-position="center"]) .preview-media-tools) { display: none; }
+  :global(body.preview-editor-open #resultados .print-card:not(.preview-fields-open) .preview-media-fields) { display: none; }
+  :global(#resultados .preview-media-tools .preview-print-edit),
+  :global(#resultados .preview-media-tools .preview-print-replace),
+  :global(#resultados .preview-media-tools .preview-media-remove) { width: auto; min-width: 0; padding: 0 .7rem; border-radius: 999px; font: 600 .72rem/1 var(--f-corpo); white-space: nowrap; }
+  :global(#resultados .print-card .preview-drag-handle) { display: none; }
+  :global(#resultados .print-card.preview-fields-open .preview-media-fields) { position: absolute; z-index: 8; top: 2.8rem; right: .5rem; display: grid; width: min(18rem, calc(100% - 1rem)); max-height: min(22rem, 62%); overflow: auto; box-shadow: 0 8px 24px rgb(48 44 41 / .14); }
+  :global(body.preview-editor-open) .print-card :global(.preview-media-tools) { position: absolute; top: .35rem; right: .35rem; margin: 0; }
+  :global(body.preview-editor-open) .print-card :global(.preview-media-tools .preview-print-replace) { width: auto; min-width: 5.8rem; padding: 0 .65rem; border-radius: 999px; font: 600 .72rem/1 var(--f-corpo); white-space: nowrap; }
+  :global(body.preview-editor-open) .print-card :global(.preview-media-fields) { position: absolute; z-index: 8; top: 2.8rem; right: .5rem; width: min(18rem, calc(100% - 1rem)); max-height: min(22rem, 62%); overflow: auto; box-shadow: 0 8px 24px rgb(48 44 41 / .14); }
+  :global(body.preview-editor-open) .print-card :global(.preview-media-fields button) { min-height: 2rem; padding: .35rem .5rem; border: 1px solid var(--linha); border-radius: .45rem; background: #fff; color: var(--texto); font: .72rem var(--f-corpo); cursor: pointer; }
+  .seta { position: absolute; z-index: 5; top: 50%; display: grid; width: 3.25rem; height: 3.25rem; place-items: center; border: 1px solid var(--linha); border-radius: 50%; background: var(--superficie); color: var(--texto); box-shadow: 0 4px 16px rgb(48 44 41 / .06); font: 300 2rem/1 var(--f-corpo); cursor: pointer; transform: translateY(-50%); transition: color .2s, background .2s, border-color .2s; }
+  .seta:hover { border-color: var(--marrom-profundo); background: var(--marrom-profundo); color: #fff; }
+  .seta-anterior { left: 0; }
+  .seta-proxima { right: 0; }
+  .print-lightbox { position: fixed; box-sizing: border-box; width: min(94vw, 76rem); max-width: 94vw; height: min(92vh, 54rem); max-height: 92vh; padding: 3rem 4rem 2rem; border: 1px solid var(--linha); border-radius: 1.1rem; background: #fff; color: var(--texto); }
+  .print-lightbox::backdrop { background: rgb(27 25 23 / .78); backdrop-filter: blur(4px); }
+  .print-lightbox[open] { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: .75rem; }
+  .print-lightbox img { grid-column: 2; grid-row: 1; display: block; width: 100%; height: 100%; max-width: 100%; max-height: calc(92vh - 7rem); object-fit: contain; }
+  .print-lightbox p { grid-column: 1 / -1; grid-row: 2; margin: 0; color: var(--suave); font-size: .78rem; text-align: center; }
+  .lightbox-fechar,.lightbox-seta { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--linha); border-radius: 50%; background: #fff; color: var(--texto); font: 300 1.8rem/1 var(--f-corpo); cursor: pointer; }
+  .lightbox-fechar { position: absolute; top: .7rem; right: .7rem; }
+  .lightbox-anterior { grid-column: 1; grid-row: 1; }
+  .lightbox-proxima { grid-column: 3; grid-row: 1; }
   @media (max-width: 759px) {
-    .numeros div {
-      align-items: center;
-      text-align: center;
-    }
-    /* Um print fica no meio; dois ou mais ficam lado a lado. */
-    .prints {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      text-align: center;
-    }
-    .prints figure {
-      width: min(46%, 15rem);
-    }
-    .prints figure:only-child {
-      width: min(70%, 15rem);
-    }
-    .depoimentos {
-      text-align: center;
-    }
+    .depoimentos-secao :global(.cabecalho) { justify-items: start; text-align: left; }
+    .depoimentos-secao :global(.cabecalho .kicker) { display: none; }
+    .depoimentos-secao :global(.cabecalho h2) { max-width: none; margin-inline: 0; text-align: left; }
+    .depoimentos-intro { text-align: left; }
+    .depoimentos-carousel { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: .75rem; padding-inline: 0; }
+    .depoimentos-palco { grid-column: 1 / -1; grid-row: 1; min-height: min(48vh, 22rem); }
+    .print-card { width: min(78%, 24rem); height: min(48vh, 22rem); min-height: 15rem; padding: .7rem; border-radius: 1.05rem; }
+    .print-card[data-position="left"] { transform: translateX(-88%) scale(.88); }
+    .print-card[data-position="right"] { transform: translateX(88%) scale(.88); }
+    .print-card[data-position="left"] .print-moldura,.print-card[data-position="right"] .print-moldura { opacity: .32; }
+    .seta { position: static; grid-row: 2; width: 2.6rem; height: 2.6rem; margin-top: 1.3rem; transform: none; }
+    .seta-anterior { grid-column: 1; justify-self: end; }
+    .seta-proxima { grid-column: 3; justify-self: start; }
+    .confianca p { max-width: 32ch; line-height: 1.8; }
+    .print-lightbox { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; padding: 3.8rem .6rem 1rem; border: 0; border-radius: 0; }
+    .print-lightbox img { max-height: calc(100dvh - 6rem); }
+    .lightbox-fechar,.lightbox-seta { width: 2.35rem; height: 2.35rem; }
   }
+  @media (prefers-reduced-motion: reduce) { .print-card,.seta,.indicador { transition-duration: .01ms; } }
 </style>
+
+<script>
+  const carousel = document.querySelector<HTMLElement>('[data-testimonial-carousel]');
+  const track = carousel?.querySelector<HTMLElement>('[data-testimonial-track]');
+  if (carousel && track) {
+    let activeIndex = 0;
+    let lightboxIndex = 0;
+    const previous = carousel.querySelector<HTMLButtonElement>('[data-testimonial-prev]');
+    const next = carousel.querySelector<HTMLButtonElement>('[data-testimonial-next]');
+    const dialog = document.querySelector<HTMLDialogElement>('[data-testimonial-lightbox]');
+    const lightboxImage = dialog?.querySelector<HTMLImageElement>('[data-lightbox-image]');
+    const lightboxStatus = dialog?.querySelector<HTMLElement>('[data-lightbox-status]');
+    const astroScope = carousel.getAttributeNames().find((name) => name.startsWith('data-astro-cid-'));
+    const cards = () => [...track.querySelectorAll<HTMLElement>(':scope > [data-testimonial-slide]')].filter((card) => !card.hidden && card.dataset.previewRemoved !== 'true');
+    const applyCardStyles = (card: HTMLElement) => {
+      if (astroScope) {
+        card.setAttribute(astroScope, '');
+        card.querySelectorAll<HTMLElement>('*').forEach((element) => element.setAttribute(astroScope, ''));
+      }
+      const image = card.querySelector<HTMLImageElement>('.print-imagem');
+      if (image) image.onclick = () => openLightbox(cards().indexOf(card));
+    };
+    const refresh = () => {
+      const all = cards();
+      if (activeIndex >= all.length) activeIndex = Math.max(0, all.length - 1);
+      all.forEach((card, index) => {
+        const length = all.length;
+        let relative = length ? (index - activeIndex + length) % length : 0;
+        if (length > 1 && relative > Math.floor(length / 2)) relative -= length;
+        card.dataset.position = index === activeIndex ? 'center' : relative === -1 ? 'left' : relative === 1 ? 'right' : 'hidden';
+        card.setAttribute('aria-hidden', String(card.dataset.position === 'hidden'));
+        card.inert = card.dataset.position === 'hidden';
+      });
+      const multiple = all.length > 1;
+      if (previous) previous.hidden = !multiple;
+      if (next) next.hidden = !multiple;
+      carousel.setAttribute('aria-label', all.length ? 'Depoimentos. Use as setas ou deslize para navegar.' : 'Depoimentos');
+    };
+    const goTo = (index: number) => {
+      const all = cards();
+      if (!all.length) return;
+      activeIndex = (index + all.length) % all.length;
+      refresh();
+    };
+    const showLightboxImage = () => {
+      const all = cards();
+      if (!all.length || !lightboxImage) return;
+      lightboxIndex = (lightboxIndex + all.length) % all.length;
+      const image = all[lightboxIndex].querySelector<HTMLImageElement>('.print-imagem');
+      if (!image) return;
+      lightboxImage.src = image.currentSrc || image.src;
+      lightboxImage.alt = image.alt;
+      if (lightboxStatus) lightboxStatus.textContent = 'Print ampliado';
+    };
+    const openLightbox = (index: number) => {
+      if (!dialog || index < 0) return;
+      lightboxIndex = index; goTo(index); showLightboxImage();
+      if (!dialog.open) dialog.showModal();
+    };
+    const moveLightbox = (offset: number) => {
+      lightboxIndex += offset; showLightboxImage(); goTo(lightboxIndex);
+    };
+    previous?.addEventListener('click', () => goTo(activeIndex - 1));
+    next?.addEventListener('click', () => goTo(activeIndex + 1));
+    carousel.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); goTo(activeIndex - 1); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); goTo(activeIndex + 1); }
+    });
+    let swipeStart: { id: number; x: number; y: number } | undefined;
+    let suppressClickUntil = 0;
+    carousel.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' || event.button !== 0 || (event.target as HTMLElement).closest('button')) return;
+      swipeStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    }, { passive: true });
+    carousel.addEventListener('pointerup', (event) => {
+      if (!swipeStart || swipeStart.id !== event.pointerId) return;
+      const deltaX = event.clientX - swipeStart.x;
+      const deltaY = event.clientY - swipeStart.y;
+      swipeStart = undefined;
+      if (Math.abs(deltaX) > 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+        suppressClickUntil = performance.now() + 350;
+        goTo(activeIndex + (deltaX < 0 ? 1 : -1));
+      }
+    }, { passive: true });
+    carousel.addEventListener('pointercancel', () => { swipeStart = undefined; }, { passive: true });
+    carousel.addEventListener('click', (event) => {
+      if (performance.now() < suppressClickUntil) { event.preventDefault(); event.stopImmediatePropagation(); }
+    }, true);
+    dialog?.querySelector('[data-lightbox-close]')?.addEventListener('click', () => dialog.close());
+    dialog?.querySelector('[data-lightbox-prev]')?.addEventListener('click', () => moveLightbox(-1));
+    dialog?.querySelector('[data-lightbox-next]')?.addEventListener('click', () => moveLightbox(1));
+    dialog?.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+    track.querySelectorAll<HTMLElement>(':scope > [data-testimonial-slide]').forEach(applyCardStyles);
+    window.addEventListener('testimonial-media-updated', () => {
+      track.querySelectorAll<HTMLElement>(':scope > figure').forEach((card) => { card.dataset.testimonialSlide = ''; applyCardStyles(card); });
+      refresh();
+    });
+    window.addEventListener('testimonial-order-updated', refresh);
+    refresh();
+  }
+</script>

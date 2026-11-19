@@ -1,0 +1,37 @@
+---
+import { metricas } from '../data/metricas';
+const ativo = import.meta.env.PROD && import.meta.env.MODE !== 'preview' && /^G-[A-Z0-9]+$/.test(metricas.id) && /^https:\/\//.test(metricas.origem);
+---
+{ativo && (
+  <div data-metricas-config data-id={metricas.id} data-origem={metricas.origem}>
+    <button class="opcoes" type="button" data-metricas-opcoes>Privacidade e cookies</button>
+    <aside class="aviso" data-metricas-aviso hidden aria-label="Preferências de medição">
+      <p><strong>Você permite medir sua visita?</strong></p>
+      <p>Com sua permissão, uso o Google Analytics para entender as visitas, os vídeos assistidos e os cliques de contato. Isso ajuda a melhorar meu portfólio. Você pode recusar e continuar navegando.</p>
+      <details>
+        <summary>Como funciona</summary>
+        <p>A medição usa cookies e informações do navegador, da origem da visita e das interações. Não envio o conteúdo de mensagens nem os dados dos links de contato. Os relatórios são consultados na minha conta do Google Analytics. Sua escolha fica salva neste navegador por até 180 dias; você pode alterá-la em “Privacidade e cookies”. Ao recusar, os cookies desta medição são removidos e a coleta é interrompida neste site.</p>
+        <p><a href="https://policies.google.com/privacy?hl=pt-BR" target="_blank" rel="noopener noreferrer">Privacidade do Google</a></p>
+        <p>Para dúvidas, use os canais de contato do portfólio.</p>
+      </details>
+      <div class="acoes">
+        <button type="button" data-metricas-recusar>Recusar</button>
+        <button type="button" data-metricas-aceitar>Aceitar medição</button>
+      </div>
+    </aside>
+  </div>
+)}
+<script>
+  import { iniciarMetricas } from '../lib/metricas';
+  const config = document.querySelector<HTMLElement>('[data-metricas-config]');
+  if (config) iniciarMetricas(config.dataset.id || '', config.dataset.origem || '');
+</script>
+<style>
+  [hidden] { display: none !important; }
+  .opcoes { display: block; margin: 0 auto 1.5rem; border: 0; background: transparent; color: var(--texto); text-decoration: underline; font: inherit; font-size: .8rem; cursor: pointer; }
+  .aviso { position: fixed; z-index: 1000; bottom: 1rem; right: 1rem; width: min(29rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1.25rem; background: var(--fundo); color: var(--texto); border: 1px solid var(--linha); border-radius: 12px; box-shadow: 0 6px 30px #0002; font-size: .9rem; }
+  .aviso p + p, details, .acoes { margin-top: .75rem; }
+  summary { cursor: pointer; }
+  .acoes { display: flex; flex-wrap: wrap; gap: .65rem; }
+  .acoes button { flex: 1; min-height: 44px; padding: .65rem; border: 1px solid var(--texto); border-radius: 6px; background: var(--fundo); color: var(--texto); font: inherit; cursor: pointer; }
+</style>
