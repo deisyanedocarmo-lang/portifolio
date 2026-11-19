@@ -62,7 +62,7 @@ export default defineCreator({
     // Descreva a foto em poucas palavras. É lido em voz alta para pessoas cegas.
     fotoDescricao: 'Deisyane sorrindo, usando uma blusa branca florida',
     // Seu nicho em uma linha. Aparece em letras pequenas acima do nome.
-    nicho: 'Beleza, moda, fitness, casa e decoração',
+    nicho: 'Beleza, moda, fitness, casa e muito mais',
     // Frase de impacto logo abaixo do nome: o que a marca ganha contratando você.
     chamada: 'Vídeos UGC naturais que mostram seu produto na vida real, prontos para anúncios e redes sociais.',
     // Bio curta: 2 ou 3 frases sobre o que você cria.
@@ -141,7 +141,7 @@ export default defineCreator({
   // Enquanto estiver ligada, aparece uma faixa no alto do site; no tema 'revista', o topo
   // inteiro também fica na cor da campanha (preto, ou a cor escolhida em `cor`).
   campanha: {
-    mostrar: true,
+    mostrar: false,
     nome: 'Black Friday',
     chamada: 'Pacotes especiais para Black Friday',
     texto: 'Peça os detalhes dos pacotes desta edição diretamente pelo WhatsApp.',
