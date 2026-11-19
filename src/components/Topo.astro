@@ -27,6 +27,7 @@ const letras = Math.max(...c.topo.nome.split(/\s+/).map((p) => p.length), 4);
     />
   </figure>
   <div class="intro">
+    <p class="prazer">Prazer, eu sou a {primeiro}.</p>
     <p class="bio">{c.topo.bio}</p>
     <div class="acoes">
       <a class="botao" href={linkPrincipal}>{c.topo.botao.texto}</a>
@@ -84,6 +85,13 @@ const letras = Math.max(...c.topo.nome.split(/\s+/).map((p) => p.length), 4);
     aspect-ratio: 4 / 5;
     object-fit: cover;
     border-radius: max(var(--raio), 10px);
+  }
+  .prazer {
+    margin: 0 0 0.4rem;
+    color: var(--destaque);
+    font-family: var(--f-titulo);
+    font-style: var(--italico);
+    font-size: 1.1rem;
   }
   .bio {
     max-width: 32rem;
