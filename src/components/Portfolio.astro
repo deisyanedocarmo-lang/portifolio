@@ -73,7 +73,7 @@ const secoes = [
         <summary>Menu <span aria-hidden="true">⌄</span></summary>
         <ul class="links-mobile">
           {secoes.filter((s) => s.link).map((s) => (
-            <li><a href={paginaCampanha ? `${caminho('')}#${s.id}` : `#${s.id}`}>{s.link}</a></li>
+            <li><a class:list={[{ 'nav-contato': s.id === 'contato' }]} href={paginaCampanha ? `${caminho('')}#${s.id}` : `#${s.id}`}>{s.link}</a></li>
           ))}
           {!paraPlataformas && <li><a class="special-menu-link" href={caminho('edicao-especial/')} data-special-menu-link data-preview-text-ignore aria-current={paginaCampanha ? 'page' : undefined} hidden={!import.meta.env.DEV && import.meta.env.MODE !== 'preview' && !paginaCampanha && !c.campanha?.mostrar}>{c.campanha?.nome ?? 'Black Friday'}</a></li>}
         </ul>
@@ -319,8 +319,11 @@ const secoes = [
     border-radius: 0.75rem;
     background: #fff;
   }
-  .links-mobile a { display: block; padding: 0.65rem 0.8rem; font-family: var(--f-titulo); font-size: 1rem; word-spacing: .1em; text-decoration: none; }
+  /* Mesmo estilo do menu do computador: letra leve, espaçada, e Contato em botão. */
+  .links-mobile a { display: block; padding: 0.75rem 0.9rem; border-radius: 0.5rem; color: var(--texto); font-family: var(--f-corpo); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; }
   .links-mobile a:hover { background: var(--fundo-suave); }
+  .links-mobile a.nav-contato { margin-top: 0.35rem; border-radius: 999px; background: var(--marrom-profundo); color: #fff; font-weight: 600; text-align: center; }
+  .links-mobile a.nav-contato:hover { background: var(--destaque); }
   nav ul {
     display: flex;
     flex-wrap: nowrap;
