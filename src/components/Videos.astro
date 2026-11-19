@@ -132,6 +132,26 @@ const nichos = [...new Map(
     gap: 0.75rem;
   }
   #videos .grade li[hidden] { display: none; }
+  /* Celular: vídeos grandes num carrossel de deslizar para o lado, como no Reels.
+     O próximo vídeo aparece um pouco na borda, mostrando que dá para deslizar. */
+  @media (max-width: 639px) {
+    #videos .grade {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: 74%;
+      gap: 0.85rem;
+      margin: 0 -1rem;
+      padding: 0.25rem 1rem 0.75rem;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 1rem;
+      scrollbar-width: none;
+      list-style: none;
+    }
+    #videos .grade::-webkit-scrollbar { display: none; }
+    #videos .grade > li { scroll-snap-align: start; }
+  }
   @media (max-width: 759px) {
     #videos .texto { margin-inline: auto; text-align: center; }
     #videos .filtros { justify-content: center; }

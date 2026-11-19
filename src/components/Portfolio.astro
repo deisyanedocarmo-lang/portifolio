@@ -227,6 +227,15 @@ const secoes = [
     text-decoration: none;
     transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
   }
+  /* Some enquanto o topo está na tela (o topo já tem o botão de orçamento). */
+  .cta-pacotes-fixo { transition: opacity .35s ease, transform .35s ease, background .2s, box-shadow .2s; }
+  .cta-pacotes-fixo.oculto { opacity: 0; transform: translateY(1.25rem); pointer-events: none; }
+  @media (max-width: 759px) {
+    .cta-pacotes-fixo { min-height: 2.6rem; padding: 0.5rem 0.95rem; gap: 0.45rem; font-size: 0.82rem; }
+  }
+  /* Seções aparecem com um leve deslize quando entram na tela. */
+  :global(.revelar) { opacity: 0; transform: translateY(1.5rem); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+  :global(.revelar.visivel) { opacity: 1; transform: none; }
   .cta-pacotes-fixo:hover { transform: translateY(-2px); background: var(--destaque); box-shadow: 0 11px 28px rgb(45 31 25 / 0.25); }
   .cta-pacotes-fixo:focus-visible { outline: 2px solid var(--destaque); outline-offset: 4px; }
   .cta-seta { font-size: 1.05rem; line-height: 1; }
@@ -372,3 +381,29 @@ const secoes = [
 </style>
 
 
+
+<script>
+  // Botão fixo de pacotes: some enquanto o topo está na tela.
+  const botaoFixo = document.querySelector<HTMLElement>('.cta-pacotes-fixo');
+  const topo = document.querySelector<HTMLElement>('#sobre');
+  if (botaoFixo && topo && 'IntersectionObserver' in window) {
+    botaoFixo.classList.add('oculto');
+    new IntersectionObserver(([entrada]) => botaoFixo.classList.toggle('oculto', entrada.isIntersecting), { threshold: 0.2 }).observe(topo);
+  }
+
+  // Seções aparecem com um leve deslize ao entrar na tela (desligado para quem pede menos movimento).
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches && !document.body.classList.contains('preview-editor-open')) {
+    const observador = new IntersectionObserver((entradas) => {
+      entradas.forEach((entrada) => {
+        if (!entrada.isIntersecting) return;
+        entrada.target.classList.add('visivel');
+        observador.unobserve(entrada.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+    document.querySelectorAll<HTMLElement>('main .secao').forEach((secao) => {
+      if (secao.getBoundingClientRect().top < innerHeight * 0.9) return; // já visível ao abrir
+      secao.classList.add('revelar');
+      observador.observe(secao);
+    });
+  }
+</script>

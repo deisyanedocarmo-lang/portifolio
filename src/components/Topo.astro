@@ -112,11 +112,30 @@ const letras = Math.max(...c.topo.nome.split(/\s+/).map((p) => p.length), 4);
     .intro {
       justify-self: stretch;
     }
-    .bio {
-      margin-inline: 0;
+    /* Foto menor e botão antes da bio: nome, frase e botão cabem na primeira tela. */
+    .capa {
+      gap: 1.1rem;
+      padding-block: 1.5rem 2.75rem;
+    }
+    .foto {
+      width: min(62%, 15.5rem);
+      padding: 0.4rem;
+    }
+    .kicker {
+      margin-bottom: 0.8rem;
+      font-size: 0.78rem;
+    }
+    .intro {
+      display: flex;
+      flex-direction: column;
     }
     .acoes {
+      order: -1;
       justify-content: flex-start;
+      margin-bottom: 1.5rem;
+    }
+    .bio {
+      margin: 0;
     }
   }
   @media (min-width: 860px) {
