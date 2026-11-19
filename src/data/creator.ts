@@ -183,6 +183,7 @@ export default defineCreator({
       { nome: 'Lumy Creator', logo: 'logo-lumy-creator.png' },
       { nome: 'amoianitas', logo: 'logo-amoianitas.png' },
       { nome: 'Domidona', logo: 'logo-domidona.png' },
+      { nome: 'Triton', logo: 'logo-triton.jpg' },
     ],
   },
 
