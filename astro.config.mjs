@@ -116,6 +116,8 @@ const previewShareApi = () => ({
 });
 
 export default defineConfig({
+  // Pasta do site no endereço. Na Cloudflare fica '/'. Na prévia do GitHub Pages, '/portifolio/'.
+  base: process.env.SITE_BASE || '/',
   vite: {
     server: { allowedHosts: ['virginia-explanation-ought-attempt.trycloudflare.com'] },
     plugins: [previewShareApi()],

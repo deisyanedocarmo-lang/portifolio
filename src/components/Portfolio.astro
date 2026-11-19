@@ -13,7 +13,7 @@ import Formatos from './Formatos.astro';
 import PerguntasFrequentes from './PerguntasFrequentes.astro';
 import Contato from './Contato.astro';
 import CampanhaEspecial from './CampanhaEspecial.astro';
-import { c, linkDeContato, linkPrincipal, videosDaGrade, type Visual } from '../lib/site';
+import { c, caminho, linkDeContato, linkPrincipal, videosDaGrade, type Visual } from '../lib/site';
 import PreviewEditor from './PreviewEditor.astro';
 
 interface Props {
@@ -73,19 +73,19 @@ const secoes = [
         <summary>Menu <span aria-hidden="true">⌄</span></summary>
         <ul class="links-mobile">
           {secoes.filter((s) => s.link).map((s) => (
-            <li><a href={paginaCampanha ? `/#${s.id}` : `#${s.id}`}>{s.link}</a></li>
+            <li><a href={paginaCampanha ? `${caminho('')}#${s.id}` : `#${s.id}`}>{s.link}</a></li>
           ))}
-          {!paraPlataformas && <li><a class="special-menu-link" href="/edicao-especial/" data-special-menu-link data-preview-text-ignore aria-current={paginaCampanha ? 'page' : undefined} hidden={!import.meta.env.DEV && import.meta.env.MODE !== 'preview' && !paginaCampanha && !c.campanha?.mostrar}>{c.campanha?.nome ?? 'Black Friday'}</a></li>}
+          {!paraPlataformas && <li><a class="special-menu-link" href={caminho('edicao-especial/')} data-special-menu-link data-preview-text-ignore aria-current={paginaCampanha ? 'page' : undefined} hidden={!import.meta.env.DEV && import.meta.env.MODE !== 'preview' && !paginaCampanha && !c.campanha?.mostrar}>{c.campanha?.nome ?? 'Black Friday'}</a></li>}
         </ul>
       </details>
       <nav aria-label="Seções do portfólio">
         <ul>
           {secoes.filter((s) => s.link).map((s) => (
             <li>
-              <a href={paginaCampanha ? `/#${s.id}` : `#${s.id}`}>{s.link}</a>
+              <a href={paginaCampanha ? `${caminho('')}#${s.id}` : `#${s.id}`}>{s.link}</a>
             </li>
           ))}
-          {!paraPlataformas && <li><a class="special-menu-link" href="/edicao-especial/" data-special-menu-link data-preview-text-ignore aria-current={paginaCampanha ? 'page' : undefined} hidden={!import.meta.env.DEV && import.meta.env.MODE !== 'preview' && !paginaCampanha && !c.campanha?.mostrar}>{c.campanha?.nome ?? 'Black Friday'}</a></li>}
+          {!paraPlataformas && <li><a class="special-menu-link" href={caminho('edicao-especial/')} data-special-menu-link data-preview-text-ignore aria-current={paginaCampanha ? 'page' : undefined} hidden={!import.meta.env.DEV && import.meta.env.MODE !== 'preview' && !paginaCampanha && !c.campanha?.mostrar}>{c.campanha?.nome ?? 'Black Friday'}</a></li>}
         </ul>
       </nav>
     </div>

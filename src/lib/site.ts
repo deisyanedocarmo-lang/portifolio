@@ -61,6 +61,9 @@ export const visual = visualDoTema(c.tema, c.cores);
 if (visual.problemas.length) throw new ProblemasNoConteudo(visual.problemas.map((p) => explicar(['cores', p.campo], p.mensagem)));
 export const { paleta, tema, fontes } = visual;
 
+/** Monta um caminho do próprio site respeitando a pasta (base) em que ele está publicado. */
+export const caminho = (p: string) => `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/${p.replace(/^\/+/, '')}`;
+
 /** Endereço público do site. Sem `endereco` no creator.ts, usa o da Cloudflare Pages. */
 export const endereco = (() => {
   if (c.endereco) return c.endereco.replace(/\/+$/, '');
@@ -74,7 +77,7 @@ export const endereco = (() => {
 
 // Modo "local": vídeos e capas em public/videos (vão junto com o site).
 // Modo "r2": vídeos e capas no bucket do Cloudflare R2.
-const baseDosVideos = c.modoDosVideos === 'r2' ? c.urlDosVideos.replace(/\/+$/, '') : '/videos';
+const baseDosVideos = c.modoDosVideos === 'r2' ? c.urlDosVideos.replace(/\/+$/, '') : caminho('videos');
 export const urlDoArquivo = (arquivo: string) => `${baseDosVideos}/${arquivo}`;
 
 export type Destino = 'whatsapp' | 'email' | 'instagram' | 'tiktok';

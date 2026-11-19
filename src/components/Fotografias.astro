@@ -1,6 +1,6 @@
 ---
 import Cabecalho from './Cabecalho.astro';
-import { c } from '../lib/site';
+import { c, caminho } from '../lib/site';
 
 const galeria = c.fotografias!;
 const legacyPhotoKeys: Record<string, string> = {
@@ -22,7 +22,7 @@ const legacyPhotoKeys: Record<string, string> = {
     <ul class="grade" data-photo-track data-photo-lane="topo">
       {galeria.lista.map(({ arquivo, descricao }, index) => (
         <li class="foto-item" data-photo-index={index} data-preview-media-key={arquivo === 'deisyane-triton.jpg' ? 'fotografias-triton' : legacyPhotoKeys[arquivo]}>
-          <figure><img src={`/fotografias/${arquivo}`} alt={descricao} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" fetchpriority={index === 0 ? 'high' : 'auto'} /></figure>
+          <figure><img src={caminho(`fotografias/${arquivo}`)} alt={descricao} loading={index < 2 ? 'eager' : 'lazy'} decoding="async" fetchpriority={index === 0 ? 'high' : 'auto'} /></figure>
         </li>
       ))}
     </ul>

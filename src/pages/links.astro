@@ -1,7 +1,7 @@
 ---
 import { Picture } from 'astro:assets';
 import Base from '../layouts/Base.astro';
-import { c, endereco, linkDeContato, visual } from '../lib/site';
+import { c, caminho, endereco, linkDeContato, visual } from '../lib/site';
 
 const base = endereco || Astro.url.origin;
 const whatsapp = linkDeContato('whatsapp', 'Oi, Deisyane! Vim pelo seu link da bio e quero conversar.');
@@ -33,7 +33,7 @@ const nome = c.topo.nome;
       </header>
 
       <nav class="atalhos" aria-label="Acessos rápidos">
-        <a class="atalho principal" href="/">Portfólio</a>
+        <a class="atalho principal" href={caminho('')}>Portfólio</a>
         {whatsapp && <a class="atalho" href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}
         {cupons.length > 0 && <a class="atalho" href="#cupons">Cupons</a>}
       </nav>

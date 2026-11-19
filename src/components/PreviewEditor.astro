@@ -1,5 +1,5 @@
 ---
-import { c } from '../lib/site';
+import { c, caminho } from '../lib/site';
 const campaignDefaults = c.campanha ?? { mostrar: false, nome: 'Black Friday', chamada: '', texto: '', botao: 'Quero receber os pacotes', inicio: '', fim: '', pacotes: [] };
 ---
 
@@ -50,7 +50,7 @@ const campaignDefaults = c.campanha ?? { mostrar: false, nome: 'Black Friday', c
         </fieldset>
       ))}
       <button type="button" data-campaign-save>Salvar edição especial</button>
-      <a href="/edicao-especial/" target="_blank" rel="noreferrer">Abrir página da edição especial</a>
+      <a href={caminho('edicao-especial/')} target="_blank" rel="noreferrer">Abrir página da edição especial</a>
     </section>
     <p class="editor-status" data-editor-status aria-live="polite">As mudanças ficam guardadas neste navegador. Para publicar, atualize o site.</p>
   </section>

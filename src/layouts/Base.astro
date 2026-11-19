@@ -1,7 +1,7 @@
 ---
 // Estrutura da página: <head> (SEO, prévia no WhatsApp, fontes) e o estilo base.
 import { Font } from 'astro:assets';
-import { c, visual as visualPadrao, endereco, tituloDaPagina, descricaoDaPagina, linkDeContato, nichosDosVideos, type Visual } from '../lib/site';
+import { c, caminho, visual as visualPadrao, endereco, tituloDaPagina, descricaoDaPagina, linkDeContato, nichosDosVideos, type Visual } from '../lib/site';
 import { TEMAS } from '../lib/temas';
 import Metricas from '../components/Metricas.astro';
 
@@ -25,7 +25,7 @@ const {
 const { paleta, tema, fontes, escuro, campanha, topoNaCampanha } = visual;
 
 // Sem endereço configurado (ex.: no computador), usa o endereço de onde a página está sendo vista.
-const base = endereco || Astro.url.origin;
+const base = (endereco || Astro.url.origin) + import.meta.env.BASE_URL.replace(/\/+$/, '');
 const canonical = canonicalUrl || `${base}/`;
 const variaveis = {
   '--fundo': paleta.fundo,
@@ -89,8 +89,8 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     {!indexar && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content={topoNaCampanha ? campanha.fundo : paleta.fundo} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" href={caminho('favicon.svg')} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={caminho('apple-touch-icon.png')} />
 
     <meta property="og:type" content="profile" />
     <meta property="og:locale" content="pt_BR" />
@@ -120,7 +120,7 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
           <nav aria-label="Ver em outro tema">
             Ver nos temas:
             {Object.keys(TEMAS).map((nome) => (
-              <a href={`/temas/${nome}/`} aria-current={nome === visual.nome ? 'page' : undefined}>
+              <a href={caminho(`temas/${nome}/`)} aria-current={nome === visual.nome ? 'page' : undefined}>
                 {nomesDosTemas[nome] ?? nome}
               </a>
             ))}
