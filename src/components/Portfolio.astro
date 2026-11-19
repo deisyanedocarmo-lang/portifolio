@@ -82,7 +82,7 @@ const secoes = [
         <ul>
           {secoes.filter((s) => s.link).map((s) => (
             <li>
-              <a href={paginaCampanha ? `${caminho('')}#${s.id}` : `#${s.id}`}>{s.link}</a>
+              <a class:list={[{ 'nav-contato': s.id === 'contato' }]} href={paginaCampanha ? `${caminho('')}#${s.id}` : `#${s.id}`}>{s.link}</a>
             </li>
           ))}
           {!paraPlataformas && <li><a class="special-menu-link" href={caminho('edicao-especial/')} data-special-menu-link data-preview-text-ignore aria-current={paginaCampanha ? 'page' : undefined} hidden={!import.meta.env.DEV && import.meta.env.MODE !== 'preview' && !paginaCampanha && !c.campanha?.mostrar}>{c.campanha?.nome ?? 'Black Friday'}</a></li>}
@@ -325,22 +325,38 @@ const secoes = [
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 0.7rem;
+    gap: 1.1rem;
   }
   nav li { display: flex; align-items: center; }
+  /* Links do menu leves e discretos, para o nome ser o destaque. */
   nav a {
     display: block;
-    font-family: var(--f-titulo);
-    font-size: 0.9rem;
-    letter-spacing: 0.015em;
-    word-spacing: 0.13em;
+    color: var(--suave);
+    font-family: var(--f-corpo);
+    font-size: 0.74rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     line-height: 1.2;
     text-decoration: none;
     white-space: nowrap;
+    transition: color 0.15s ease;
   }
-  nav a:hover {
-    text-decoration: underline;
+  nav a:hover { color: var(--marrom-profundo); }
+  /* Contato vira um botãozinho marrom no fim do menu. */
+  nav a.nav-contato {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.3rem;
+    margin-left: 0.4rem;
+    padding: 0 1.05rem;
+    border-radius: 999px;
+    background: var(--marrom-profundo);
+    color: #fff;
+    font-weight: 600;
+    transition: background 0.15s ease;
   }
+  nav a.nav-contato:hover { background: var(--destaque); color: #fff; }
   nav .special-menu-link { display: inline-flex; align-items: center; min-height: 2.15rem; padding: 0 .8rem; border-radius: 999px; background: var(--marrom-profundo); color: #fff; font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; }
   .links-mobile .special-menu-link { border-radius: .5rem; background: var(--fundo-suave); color: var(--marrom-profundo); font-weight: 700; }
   nav [hidden], .links-mobile [hidden] { display: none !important; }
@@ -376,8 +392,8 @@ const secoes = [
     }
   }
   @media (min-width: 1200px) {
-    nav ul { gap: 0.85rem; }
-    nav a { font-size: 0.92rem; }
+    nav ul { gap: 1.4rem; }
+    nav a { font-size: 0.76rem; }
     .barra .botao { padding-inline: 1.1rem; font-size: 0.84rem; }
   }
 </style>
