@@ -314,6 +314,7 @@ export default defineCreator({
     frase: 'Conteúdo real, recomendações e novidades.',
     cupons: [
       { marca: 'Triton', codigo: 'DEISYANE5', url: 'https://usetriton.com.br/', detalhe: 'Use meu cupom na loja Triton.' },
+      { marca: 'Domidona', codigo: 'DEISYANE5', url: 'https://www.domidona.com.br/', detalhe: 'Use meu cupom na loja Domidona.' },
     ],
   },
 

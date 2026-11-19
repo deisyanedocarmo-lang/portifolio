@@ -58,14 +58,10 @@ const fotos = (c.fotografias?.mostrar ? c.fotografias.lista : []).slice(0, 6).ma
             {b.texto}
           </a>
         ))}
-        {cupons.map((cupom) => (
-          <a class="botao-link contorno" href="#cupons">{cupom.marca} <span aria-hidden="true">·</span> cupom {cupom.codigo}</a>
-        ))}
       </nav>
 
       <section class="apresentacao" aria-label="Sobre">
         <p class="nome-espacado">{nome}</p>
-        <p class="nicho">{c.topo.nicho.replace(/,\s*e\s+/g, ' | ').replace(/,\s*/g, ' | ')}</p>
         <p class="frase">{c.linksBio.frase}</p>
       </section>
 
