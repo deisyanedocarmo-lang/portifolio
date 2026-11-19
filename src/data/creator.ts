@@ -300,7 +300,7 @@ export default defineCreator({
       // Mensagem que já aparece escrita quando a marca abre o WhatsApp.
       mensagem: 'Oi, Deisyane! Vi seu portfólio e quero conversar sobre um conteúdo UGC.',
     },
-    email: 'contato.deisyane.borges@gmail.com',
+    email: 'contato.deisyaneborges@gmail.com',
     // Só o perfil, com ou sem @.
     instagram: 'bydeisyaneborges',
     tiktok: 'bydeisyaneborges',

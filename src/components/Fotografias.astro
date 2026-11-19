@@ -142,8 +142,17 @@ const legacyPhotoKeys: Record<string, string> = {
       activeIndex = (index + cards.length) % cards.length;
       const image = cards[activeIndex].querySelector<HTMLImageElement>('img');
       if (!image) return;
-      expanded.src = image.dataset.full || image.currentSrc || image.src;
+      // Mostra na hora a versão leve (já baixada) e troca pela foto grande quando ela terminar de carregar.
+      const leve = image.currentSrc || image.src;
+      const grande = image.dataset.full;
+      expanded.src = leve;
       expanded.alt = image.alt;
+      if (grande && grande !== leve) {
+        const indice = activeIndex;
+        const carregando = new Image();
+        carregando.onload = () => { if (activeIndex === indice && dialog?.open !== false) expanded.src = grande; };
+        carregando.src = grande;
+      }
       if (status) status.textContent = `${activeIndex + 1} de ${cards.length}`;
     };
     viewport.addEventListener('click', (event) => {

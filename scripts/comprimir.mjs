@@ -140,7 +140,7 @@ for (const original of originais) {
   const gerarCapa = (segundo) =>
     roda('ffmpeg', [
       '-hide_banner', '-loglevel', 'error', '-y', '-ss', String(segundo), '-i', mp4,
-      '-frames:v', '1', '-vf', 'scale=540:960', '-q:v', '4', '-map_metadata', '-1', jpg,
+      '-frames:v', '1', '-vf', 'scale=720:1280', '-q:v', '3', '-map_metadata', '-1', jpg,
     ]).status === 0;
   if (!gerarCapa(0)) avisos.push(`${original}: o vídeo ficou pronto, mas não consegui gerar a capa.`);
   else {
