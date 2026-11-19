@@ -63,8 +63,10 @@ export default defineCreator({
     fotoDescricao: 'Deisyane sorrindo, usando uma blusa branca florida',
     // Seu nicho em uma linha. Aparece em letras pequenas acima do nome.
     nicho: 'Beleza, moda, fitness, casa e decoração',
+    // Frase de impacto logo abaixo do nome: o que a marca ganha contratando você.
+    chamada: 'Vídeos UGC naturais que mostram seu produto na vida real, prontos para anúncios e redes sociais.',
     // Bio curta: 2 ou 3 frases sobre o que você cria.
-    bio: 'Mineira, casada, mãe da Laura e apaixonada por beleza, autocuidado, moda, lifestyle e muito mais. Encontro inspiração nos detalhes da vida real e transformo momentos simples em conteúdos leves, autênticos e sofisticados. No UGC, uno criatividade, estética e naturalidade para criar conteúdos que conectam marcas e pessoas de forma genuína.',
+    bio: 'Mineira, casada, mãe da Laura e apaixonada por beleza, autocuidado, moda e lifestyle. Transformo momentos simples em conteúdos leves, autênticos e sofisticados, que conectam marcas e pessoas de forma genuína.',
     botao: {
       // Texto do botão principal.
       texto: 'Quero um orçamento',
@@ -206,7 +208,7 @@ export default defineCreator({
 
   // ── COMO EU TRABALHO ───────────────────────────────────────────────────────
   comoTrabalho: {
-    mostrar: false,
+    mostrar: true,
     titulo: 'Como eu trabalho',
     prazo: 'Os vídeos são entregues em até 7 dias úteis.',
     incluso: [],
@@ -221,8 +223,8 @@ export default defineCreator({
     lista: [
       { pergunta: 'Em quanto tempo recebo os vídeos?', resposta: 'Os vídeos são entregues em até 7 dias úteis.' },
       { pergunta: 'Posso usar os vídeos em anúncios?', resposta: 'Sim. Todos os pacotes incluem uso em anúncios por 3 meses e uso orgânico permanente.' },
-      { pergunta: 'Como funciona o pagamento?', resposta: 'O pagamento é feito em 50% via Pix para reservar a data e os 50% restantes na entrega. Também aceitamos cartão.' },
-      { pergunta: 'Vocês emitem nota fiscal?', resposta: 'Sim, emitimos nota fiscal.' },
+      { pergunta: 'Como funciona o pagamento?', resposta: 'O pagamento é feito em 50% via Pix para reservar a data e os 50% restantes na entrega. Também aceito cartão.' },
+      { pergunta: 'Você emite nota fiscal?', resposta: 'Sim, emito nota fiscal.' },
     ],
   },
 

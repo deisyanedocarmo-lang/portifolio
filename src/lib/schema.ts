@@ -119,6 +119,8 @@ export const esquema = z
       foto: imagem('da foto'),
       fotoDescricao: texto('faltou descrever a foto em poucas palavras (é lida em voz alta para pessoas cegas)'),
       nicho: texto('faltou o nicho em uma linha (ex.: "Skincare, casa e rotina")'),
+      // Frase de impacto logo abaixo do nome: o que a marca ganha contratando você.
+      chamada: z.string().trim().default(''),
       bio: texto('faltou a bio curta'),
       botao: z
         .strictObject({
