@@ -147,6 +147,8 @@ const secoes = [
       padding-block: clamp(3rem, 4vw, 3.5rem);
     }
   }
+  /* As faixas de fundo usam 100vw; no Windows isso inclui a barra de rolagem e criava rolagem para o lado. */
+  .pagina { overflow-x: clip; }
   .pagina > :global(section.secao:nth-child(even of section.secao:not(.marcas-trabalhadas)))::before {
     content: '';
     position: absolute;
