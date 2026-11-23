@@ -106,6 +106,14 @@ export default defineCreator({
         duracao: '0:23',
       },
       {
+        arquivo: 'sandalia-dourada-domidona.mp4',
+        capa: 'sandalia-dourada-domidona.jpg',
+        marca: 'Domidona',
+        formato: 'Detalhes do produto',
+        nicho: 'Moda',
+        duracao: '0:32',
+      },
+      {
         arquivo: 'look-lifestyle-moda.mp4',
         capa: 'look-lifestyle-moda.jpg',
         marca: 'Sandália',
@@ -121,6 +129,7 @@ export default defineCreator({
     titulo: 'Fotografias',
     texto: 'Imagens pensadas para apresentar produtos com leveza e autenticidade.',
     lista: [
+      { arquivo: 'sandalia-dourada-domidona.jpg', descricao: 'Pernas cruzadas com sandália dourada de salto bloco e vestido off-white.' },
       { arquivo: 'deisyane-triton.jpg', descricao: 'Deisyane apresenta uma garrafa Triton personalizada em ambiente externo.' },
       { arquivo: 'cuidados-cabelos-carrossel.webp', descricao: 'Deisyane apresenta um tratamento capilar.' },
       { arquivo: 'protetor-solar-carrossel.webp', descricao: 'Deisyane mostra um protetor solar facial.' },
@@ -302,8 +311,8 @@ export default defineCreator({
     },
     email: 'contato.deisyaneborges@gmail.com',
     // Só o perfil, com ou sem @.
-    instagram: 'bydeisyaneborges',
-    tiktok: 'bydeisyaneborges',
+    instagram: 'deisyaneborgess',
+    tiktok: 'deisyaneborgess',
     // Opcional: link do mídia kit (https://...) ou um PDF colocado na pasta public (ex.: 'midia-kit.pdf').
     midiaKit: '',
   },
