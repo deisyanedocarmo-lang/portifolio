@@ -91,7 +91,7 @@ export default defineCreator({
     lista: [
       {
         arquivo: 'sandalia-dourada-domidona.mp4',
-        capa: 'sandalia-dourada-domidona.jpg',
+        capa: 'sandalia-dourada-domidona-capa.jpg',
         marca: 'Domidona',
         formato: 'Detalhes do produto',
         nicho: 'Moda',
