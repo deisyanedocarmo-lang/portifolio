@@ -121,6 +121,15 @@ export default defineCreator({
         nicho: 'Moda',
         duracao: '0:38',
       },
+      {
+        arquivo: 'unboxing-lark-a1-hollyland.mp4',
+        capa: 'unboxing-lark-a1-hollyland.jpg',
+        marca: 'Hollyland Lark A1',
+        formato: 'Unboxing',
+        nicho: 'Tech',
+        duracao: '0:28',
+        autoral: true,
+      },
     ],
   },
 
