@@ -90,6 +90,14 @@ export default defineCreator({
     previaAutomatica: false,
     lista: [
       {
+        arquivo: 'sandalia-dourada-domidona.mp4',
+        capa: 'sandalia-dourada-domidona.jpg',
+        marca: 'Domidona',
+        formato: 'Detalhes do produto',
+        nicho: 'Moda',
+        duracao: '0:32',
+      },
+      {
         arquivo: 'cafe-cafeteira.mp4',
         capa: 'cafe-cafeteira.jpg',
         marca: 'Cafeteira Electrolux',
@@ -104,14 +112,6 @@ export default defineCreator({
         formato: 'Rotina de haircare',
         nicho: 'Haircare',
         duracao: '0:23',
-      },
-      {
-        arquivo: 'sandalia-dourada-domidona.mp4',
-        capa: 'sandalia-dourada-domidona.jpg',
-        marca: 'Domidona',
-        formato: 'Detalhes do produto',
-        nicho: 'Moda',
-        duracao: '0:32',
       },
       {
         arquivo: 'look-lifestyle-moda.mp4',
