@@ -106,6 +106,14 @@ export default defineCreator({
         duracao: '0:28',
       },
       {
+        arquivo: 'camiseta-rosa.mp4',
+        capa: 'camiseta-rosa-capa.jpg',
+        marca: 'amoianitas',
+        formato: 'Review',
+        nicho: 'Moda',
+        duracao: '0:28',
+      },
+      {
         arquivo: 'cafe-cafeteira.mp4',
         capa: 'cafe-cafeteira-capa.jpg',
         marca: 'Cafeteira Electrolux',
