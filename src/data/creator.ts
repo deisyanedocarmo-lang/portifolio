@@ -195,6 +195,7 @@ export default defineCreator({
       { nome: 'amoianitas', logo: 'logo-amoianitas.png' },
       { nome: 'Domidona', logo: 'logo-domidona.png' },
       { nome: 'Triton', logo: 'logo-triton.jpg' },
+      { nome: 'Época', logo: 'logo-epoca.png' },
     ],
   },
 
