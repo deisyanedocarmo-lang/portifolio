@@ -114,9 +114,17 @@ export default defineCreator({
         duracao: '0:32',
       },
       {
+        arquivo: 'epoca-black-friday.mp4',
+        capa: 'epoca-black-friday-capa.jpg',
+        marca: 'Época Cosméticos',
+        formato: 'Black Friday',
+        nicho: 'Beleza',
+        duracao: '0:26',
+      },
+      {
         arquivo: 'camiseta-rosa.mp4',
         capa: 'camiseta-rosa-capa.jpg',
-        marca: 'amoianitas',
+        marca: 'Amocianitas',
         formato: 'Review',
         nicho: 'Moda',
         duracao: '0:28',
