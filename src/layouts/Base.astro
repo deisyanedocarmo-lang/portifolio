@@ -14,6 +14,8 @@ interface Props {
   pageTitle?: string;
   pageDescription?: string;
   canonicalUrl?: string;
+  /** Página com versão em inglês: '' (portfólio) ou 'links/'. */
+  rota?: string;
 }
 const {
   visual = visualPadrao,
@@ -21,6 +23,7 @@ const {
   pageTitle = tituloDaPagina,
   pageDescription = descricaoDaPagina,
   canonicalUrl,
+  rota,
 } = Astro.props;
 const { paleta, tema, fontes, escuro, campanha, topoNaCampanha } = visual;
 
@@ -88,6 +91,13 @@ const nomesDosTemas: Record<string, string> = { revista: 'Revista', noite: 'Noit
     <meta name="description" content={pageDescription} />
     {!indexar && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
+    {rota !== undefined && (
+      <>
+        <link rel="alternate" hreflang="pt-BR" href={`${endereco || Astro.url.origin}${caminho(rota)}`} />
+        <link rel="alternate" hreflang="en" href={`${endereco || Astro.url.origin}${caminho(`en/${rota}`)}`} />
+        <link rel="alternate" hreflang="x-default" href={`${endereco || Astro.url.origin}${caminho(rota)}`} />
+      </>
+    )}
     <meta name="theme-color" content={topoNaCampanha ? campanha.fundo : paleta.fundo} />
     <link rel="icon" href={caminho('favicon.svg')} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={caminho('apple-touch-icon.png')} />

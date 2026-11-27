@@ -4,6 +4,7 @@
 import { existsSync } from 'node:fs';
 import { Picture } from 'astro:assets';
 import Base from '../layouts/Base.astro';
+import Idioma from '../components/Idioma.astro';
 import { c, caminho, endereco, linkDeContato, visual } from '../lib/site';
 
 const base = endereco || Astro.url.origin;
@@ -30,12 +31,14 @@ const fotos = (c.fotografias?.mostrar ? c.fotografias.lista : []).slice(0, 6).ma
   visual={visual}
   pageTitle={`${nome} · Links`}
   pageDescription={c.linksBio.frase || c.topo.nicho}
-  canonicalUrl={`${base}/links/`}
+  canonicalUrl={`${base}${caminho('links/')}`}
+  rota="links/"
 >
   <main class="links-page" id="conteudo">
     <p class="disponivel"><span class="ponto" aria-hidden="true"></span>Disponível para novas campanhas</p>
 
     <header class="capa">
+      <div class="idioma-capa"><Idioma rota="links/" claro /></div>
       <Picture
         src={c.linksBio.foto ?? c.topo.foto}
         alt={c.linksBio.foto ? (c.linksBio.fotoDescricao || c.topo.fotoDescricao) : c.topo.fotoDescricao}
@@ -150,6 +153,7 @@ const fotos = (c.fotografias?.mostrar ? c.fotografias.lista : []).slice(0, 6).ma
   @keyframes pulsar { 70% { box-shadow: 0 0 0 0.45rem rgb(156 191 143 / 0%); } 100% { box-shadow: 0 0 0 0 rgb(156 191 143 / 0%); } }
   /* Foto grande, com o nome por cima e um degradê que funde com o fundo. */
   .capa { position: relative; }
+  .idioma-capa { position: absolute; top: 0.85rem; right: 0.85rem; z-index: 2; }
   .capa :global(img) {
     display: block;
     width: 100%;

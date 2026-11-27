@@ -15,6 +15,7 @@ import Contato from './Contato.astro';
 import CampanhaEspecial from './CampanhaEspecial.astro';
 import { c, caminho, linkDeContato, linkPrincipal, videosDaGrade, type Visual } from '../lib/site';
 import PreviewEditor from './PreviewEditor.astro';
+import Idioma from './Idioma.astro';
 
 interface Props {
   visual?: Visual;
@@ -56,7 +57,7 @@ const secoes = [
 ].filter((s) => s.mostrar);
 ---
 
-<Base visual={visual} indexar={indexar}>
+<Base visual={visual} indexar={indexar} rota={paginaCampanha || paraPlataformas ? undefined : ''}>
   <div class="faixa-rolante" aria-label="Mensagem e contato">
     <div class="faixa-movimento">
       {[0, 1, 2, 3].map((item) => (
@@ -70,6 +71,7 @@ const secoes = [
   <header class="barra">
     <div class="recuo conteudo-barra">
       <a class="nome" href={paginaCampanha ? '/' : '#'}>{nomePrincipal}{sobrenome.length > 0 && <span class="sobrenome"> {sobrenome.join(' ')}</span>}<span class="assinatura"> · UGC</span></a>
+      <Idioma />
       <details class="menu-mobile">
         <summary>Menu <span aria-hidden="true">⌄</span></summary>
         <ul class="links-mobile">
@@ -294,6 +296,8 @@ const secoes = [
   nav {
     display: none;
   }
+  /* Botão PT | EN encostado no menu, do lado direito. */
+  .conteudo-barra > :global(.idioma) { margin-left: auto; }
   .menu-mobile { position: relative; }
   .menu-mobile summary {
     display: flex;

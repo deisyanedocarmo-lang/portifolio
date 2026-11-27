@@ -3,6 +3,7 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import { networkInterfaces } from 'node:os';
 import { FONTES, variavelDaFonte } from './src/lib/temas.ts';
+import { gerarVersaoEmIngles } from './scripts/versao-ingles.ts';
 
 const pacote = (nome) => nome.toLowerCase().replaceAll(' ', '-');
 
@@ -118,6 +119,13 @@ const previewShareApi = () => ({
 export default defineConfig({
   // Pasta do site no endereço. Na Cloudflare fica '/'. Na prévia do GitHub Pages, '/portifolio/'.
   base: process.env.SITE_BASE || '/',
+  // Versão em inglês (/en/), montada no fim do build a partir das traduções de src/data/ingles.ts.
+  integrations: [
+    {
+      name: 'versao-em-ingles',
+      hooks: { 'astro:build:done': ({ dir }) => gerarVersaoEmIngles(dir, process.env.SITE_BASE || '/') },
+    },
+  ],
   vite: {
     server: { allowedHosts: ['virginia-explanation-ought-attempt.trycloudflare.com'] },
     plugins: [previewShareApi()],

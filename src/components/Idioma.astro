@@ -1,0 +1,62 @@
+---
+// Botão PT | EN. A versão em inglês fica em /en/ e é montada no build (scripts/versao-ingles.ts),
+// que também passa a marcar o EN como o idioma atual.
+import { caminho } from '../lib/site';
+
+interface Props {
+  /** Página atual: '' para o portfólio, 'links/' para a página de links. */
+  rota?: string;
+  claro?: boolean;
+}
+const { rota = '', claro = false } = Astro.props;
+---
+
+<div class:list={['idioma', { claro }]} role="group" aria-label="Idioma / Language">
+  <a href={caminho(rota)} hreflang="pt-BR" lang="pt-BR" title="Português" aria-current="true" data-idioma="pt">PT</a>
+  <a href={caminho(`en/${rota}`)} hreflang="en" lang="en" title="English" data-idioma="en">EN</a>
+</div>
+
+<script>
+  // Guarda a escolha, para a próxima visita abrir no mesmo idioma.
+  try {
+    const escolhido = localStorage.getItem('idioma-escolhido');
+    const atual = document.documentElement.lang === 'en' ? 'en' : 'pt';
+    const destino = document.querySelector<HTMLAnchorElement>(`[data-idioma="${escolhido}"]`);
+    if (escolhido && escolhido !== atual && destino) location.replace(destino.href + location.hash);
+  } catch {}
+  document.querySelectorAll<HTMLAnchorElement>('[data-idioma]').forEach((link) =>
+    link.addEventListener('click', () => {
+      try { localStorage.setItem('idioma-escolhido', link.dataset.idioma || 'pt'); } catch {}
+    }),
+  );
+</script>
+
+<style>
+  .idioma {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 0.2rem;
+    border: 1px solid var(--linha);
+    border-radius: 999px;
+    background: #fff;
+  }
+  .idioma a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.2rem;
+    min-height: 2rem;
+    padding: 0 0.55rem;
+    border-radius: 999px;
+    color: var(--suave);
+    font: 600 0.72rem/1 var(--f-corpo);
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .idioma a:hover { color: var(--marrom-profundo); }
+  .idioma a[aria-current='true'] { background: var(--marrom-profundo); color: #fff; }
+  .idioma a:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+  .idioma.claro { border-color: rgb(255 255 255 / 0.55); background: rgb(255 255 255 / 0.88); backdrop-filter: blur(6px); }
+</style>
