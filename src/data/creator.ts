@@ -236,7 +236,7 @@ export default defineCreator({
   // Cada lista pode ficar vazia [] e aquela parte some.
   resultados: {
     mostrar: true,
-    titulo: 'Depoimentos',
+    titulo: 'O que as marcas dizem',
     numeros: [],
     // Prints de feedback: o arquivo vai em src/imagens.
     prints: [
