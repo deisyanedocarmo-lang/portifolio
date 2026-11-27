@@ -32,14 +32,15 @@ const [nomePrincipal, ...sobrenome] = c.topo.nome.trim().split(/\s+/);
 const linkDosPacotes = linkDeContato('whatsapp', 'Oi, Deisyane! Gostaria de saber mais sobre seus pacotes e valores.') ?? linkPrincipal;
 
 // `link`: aparece no menu do cabeçalho fixo.
+// Ordem pedida por ela (27/11/2026): marcas trabalhadas, depoimentos e só depois os vídeos.
 const secoes = [
-  { Componente: Videos, id: 'videos', link: 'Vídeos', mostrar: tem(c.videos, videosDaGrade) },
   {
     Componente: Resultados,
     id: 'resultados',
     link: 'Depoimentos',
     mostrar: tem(c.resultados, c.resultados?.numeros ?? [], c.resultados?.prints ?? [], c.resultados?.depoimentos ?? []),
   },
+  { Componente: Videos, id: 'videos', link: 'Vídeos', mostrar: tem(c.videos, videosDaGrade) },
   { Componente: Fotografias, id: 'fotografias', link: 'Fotos', mostrar: tem(c.fotografias, c.fotografias?.lista ?? []) },
   { Componente: Valores, id: 'valores', link: 'Pacotes', mostrar: !paraPlataformas && tem(c.valores, c.valores?.pacotes ?? [], c.valores?.avulsos ?? []) },
   { Componente: Formatos, id: 'formatos', link: 'Formatos', mostrar: tem(c.formatos, c.formatos?.lista ?? []) },
